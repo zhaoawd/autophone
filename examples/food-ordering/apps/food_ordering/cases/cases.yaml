@@ -1,0 +1,113 @@
+meta:
+  title: Food Ordering
+  app: food_ordering
+  schema_version: 2
+  total: 5
+  next_seq: 6
+cases:
+  - id: R1
+    revision: 1
+    status: draft
+    case_type: 功能测试
+    test_point: 首页按钮文字
+    owner: example
+    module: 首页
+    item: 首页显示立即下单
+    login_precondition: any
+    steps: ["读取首页文字"]
+    expects: ["页面显示立即下单"]
+  - id: R2
+    revision: 1
+    status: draft
+    case_type: 功能测试
+    test_point: 首页调偏好入口导航（手写基线）
+    owner: example
+    module: 首页
+    item: 首页点击调偏好进入饮食偏好页（手写 Recipe 对照基线）
+    login_precondition: any
+    steps:
+      - 在首页（S01_home）按可见文案点击「调偏好」按钮
+      - 验证进入饮食偏好页（S02_preferences）
+    expects:
+      - 页面展示「饮食偏好」与「保存偏好」
+  - id: R3
+    revision: 1
+    status: draft
+    case_type: 功能测试
+    test_point: 首页调偏好入口导航（符号绑定）
+    owner: example
+    module: 首页
+    item: 首页通过符号 ctrl.home.preferences 进入饮食偏好页
+    login_precondition: any
+    steps:
+      - 在首页（S01_home）执行 tap_ax(symbol=ctrl.home.preferences)
+      - 验证进入饮食偏好页（S02_preferences）
+    expects:
+      - 页面展示「饮食偏好」与「保存偏好」（不受按钮文案变更影响）
+  - id: R4
+    revision: 1
+    status: draft
+    case_type: 功能测试
+    test_point: 首页偏好入口独立文案预期（反例 #1）
+    owner: example
+    module: 首页
+    item: 首页偏好入口按钮独立核验用户可见文案「调偏好」
+    login_precondition: any
+    steps:
+      - 停留在首页（S01_home）读取偏好入口按钮可见文案
+    expects:
+      - 页面显示预期产品文案「调偏好」（独立于符号定位断言）
+  - id: R5
+    revision: 1
+    status: draft
+    case_type: 功能测试
+    test_point: 饮食偏好页独立预期业务对象校验（反例 #6 / 专项二联合裁决）
+    owner: example
+    module: 饮食偏好
+    item: 进入饮食偏好页后核验独立测试数据中指定的目标偏好方案实体（UI + API + Readback 联合裁决）
+    login_precondition: any
+    steps:
+      - 通过符号 ctrl.home.preferences 从首页进入饮食偏好页（S02_preferences）
+      - 按 api_fixtures.yaml[R5] 中的独立预期业务实体校验页面呈现、交互窗口 API 载荷与后置只读回读结果
+    expects:
+      - 页面结构命中 S02_preferences 且 UI、交互窗口 API 与后置只读回读一致匹配目标业务实体（任一平面偏离必判失败）
+    entity_binding:
+      entity_type: store
+      entity_id:
+        from_fixture: expected_store_id
+      attributes:
+        store_name:
+          from_fixture: expected_store_name
+        preference_profile:
+          from_fixture: expected_preference_profile
+      api_window:
+        window:
+          symbol_id: ctrl.home.preferences
+        expect:
+          - name: load_store_preferences
+            method: GET
+            path: /api/v1/preferences
+            assert:
+              status: 200
+              resp_error:
+                op: empty
+              req.query.store_id: "${entity.id}"
+              resp.data.store_id: "${entity.id}"
+              resp.data.store_name: "${entity.store_name}"
+              resp.data.preference_profile: "${entity.preference_profile}"
+      readback:
+        op: read_preference_profile
+        with:
+          store_id:
+            from_entity: id
+        expect_context:
+          store_id:
+            from_entity: id
+          store_name:
+            from_entity: store_name
+          preference_profile:
+            from_entity: preference_profile
+      joint_verdict:
+        require_ui: true
+        require_api: true
+        require_readback: true

@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "rn-update-record.v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "update_id",
+    "base_build_id",
+    "required_native_runtime_id",
+    "source_revision",
+    "manifest_sha256",
+    "bundle_sha256",
+    "assets_tree_sha256",
+    "artifact_locator",
+    "retention_class"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "rn-update-record/v1"
+    },
+    "update_id": {
+      "type": "string",
+      "pattern": "^upd-[0-9A-Za-z._-]{1,120}$"
+    },
+    "base_build_id": {
+      "type": "string",
+      "pattern": "^bld-[0-9a-f]{12,64}$"
+    },
+    "required_native_runtime_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "source_revision": {
+      "$ref": "rn-update-manifest.v2.json#/properties/source_revision"
+    },
+    "manifest_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "bundle_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "assets_tree_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "artifact_locator": {
+      "type": "object",
+      "minProperties": 1,
+      "description": "Opaque product artifact reference; registry does not interpret or verify artifact bytes."
+    },
+    "retention_class": {
+      "enum": [
+        "iteration",
+        "candidate",
+        "accepted",
+        "baseline"
+      ]
+    }
+  }
+}

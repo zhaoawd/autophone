@@ -1,0 +1,173 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "location-qualification.v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "location-qualification/v1"
+    },
+    "contract_version": {
+      "const": "owned-fixed/v1"
+    },
+    "observed_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "enum": [
+        "qualified",
+        "failed"
+      ]
+    },
+    "reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "scope": {
+      "const": "owned_fixed_protocol"
+    },
+    "runtime_identity": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "reuse_scope": {
+      "enum": [
+        "run",
+        "identity"
+      ]
+    },
+    "release_status": {
+      "const": "incomplete"
+    },
+    "release_gates": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "status_schema": {
+          "enum": [
+            "not_run",
+            "partial",
+            "passed",
+            "failed"
+          ]
+        },
+        "fixed_ack_heartbeat": {
+          "enum": [
+            "not_run",
+            "partial",
+            "passed",
+            "failed"
+          ]
+        },
+        "generation_stop_reconnect": {
+          "enum": [
+            "not_run",
+            "partial",
+            "passed",
+            "failed"
+          ]
+        },
+        "map_launch_orders": {
+          "enum": [
+            "not_run",
+            "partial",
+            "passed",
+            "failed"
+          ]
+        },
+        "route_consumption": {
+          "enum": [
+            "not_run",
+            "partial",
+            "passed",
+            "failed"
+          ]
+        },
+        "durable_restart": {
+          "enum": [
+            "not_run",
+            "partial",
+            "passed",
+            "failed"
+          ]
+        },
+        "sdk_consumption": {
+          "enum": [
+            "not_run",
+            "partial",
+            "passed",
+            "failed"
+          ]
+        },
+        "spawn_consumption": {
+          "enum": [
+            "not_run",
+            "partial",
+            "passed",
+            "failed"
+          ]
+        }
+      },
+      "required": [
+        "status_schema",
+        "fixed_ack_heartbeat",
+        "generation_stop_reconnect",
+        "map_launch_orders",
+        "route_consumption",
+        "durable_restart",
+        "sdk_consumption",
+        "spawn_consumption"
+      ]
+    },
+    "evidence": {
+      "type": "object",
+      "required": [
+        "run_id",
+        "rig_id",
+        "owner",
+        "requests",
+        "error",
+        "cleanup_confirmed"
+      ],
+      "properties": {
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rig_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "requests": {
+          "type": "array"
+        },
+        "cleanup_confirmed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "evidence_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "required": [
+    "schema_version",
+    "contract_version",
+    "observed_at",
+    "status",
+    "reason",
+    "scope",
+    "runtime_identity",
+    "reuse_scope",
+    "release_status",
+    "release_gates",
+    "evidence",
+    "evidence_sha256"
+  ]
+}

@@ -1,0 +1,156 @@
+[project]
+name = "autophone"
+version = "0.2.0"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+readme = "README.md"
+description = "Deterministic iOS VM regression testing and multi-VM device control plane built on vphone-cli"
+authors = [{ name = "zhaoawd" }]
+keywords = ["ios", "vphone", "virtualization", "regression-testing", "control-plane", "automation"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: MacOS X",
+    "Intended Audience :: Developers",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Testing",
+]
+requires-python = ">=3.11,<3.14"
+dependencies = ["autophone-kernel==0.2.0", "autophone-rig==0.2.0", "autophone-domain==0.2.0", "autophone-console==0.2.0"]
+
+[project.urls]
+Homepage = "https://github.com/zhaoawd/autophone"
+Repository = "https://github.com/zhaoawd/autophone.git"
+Documentation = "https://github.com/zhaoawd/autophone/tree/main/docs"
+Issues = "https://github.com/zhaoawd/autophone/issues"
+Changelog = "https://github.com/zhaoawd/autophone/blob/main/CHANGELOG.md"
+
+# extras 与下面的 [dependency-groups] 内容一一对应，两处并存，各自服务不同对象：
+#   - [dependency-groups]（PEP 735）只在本仓库源码树内生效（`uv sync --group platform`），
+#     服务开发；它不写进 wheel/sdist 的 metadata，安装者拿不到。
+#   - [project.optional-dependencies]（extras）随发布物一起走，服务
+#     `pip install "autophone[platform]"` 的安装者；Rig 的必需依赖已直接声明，platform extra 保留兼容。
+# 两者语义不同、不能互相替代，所以内容刻意重复。改版本约束时两处同步改。
+#
+# 例外：下面 [dependency-groups] 里的 `dev` 组（ruff）没有对应 extra。它是开发期工具，
+# 不进 wheel/sdist 的运行期依赖；安装者不需要它。
+[project.optional-dependencies]
+frida = [
+    "ddddocr>=1.6.1",
+    # Frida is a two-sided protocol (host Python/tools + guest server). Keep the
+    # promoted baseline exact and verify candidate versions in isolation before changing it.
+    "frida==17.16.1",
+    "frida-tools==14.10.4",
+]
+contract = [
+    "pytest>=8.0",
+    "pytest-xdist>=3.6",
+]
+postgres = [
+    "psycopg[binary]>=3.2",
+]
+platform = [
+    "croniter>=6.0",
+    "fastapi>=0.115",
+    "httpx2>=2.12.0",
+    "psycopg[binary]>=3.2",
+    "uvicorn>=0.30",
+    "websockets>=13.0,<14.0",
+]
+all = ["autophone[contract,frida,platform,postgres]"]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.16.6",
+]
+frida = [
+    "ddddocr>=1.6.1",
+    # Frida is a two-sided protocol (host Python/tools + guest server). Keep the
+    # promoted baseline exact and verify candidate versions in isolation before changing it.
+    "frida==17.16.1",
+    "frida-tools==14.10.4",
+]
+contract = [
+    "pytest>=8.0",
+    "pytest-xdist>=3.6",
+]
+postgres = [
+    "psycopg[binary]>=3.2",
+]
+platform = [
+    "croniter>=6.0",
+    "fastapi>=0.115",
+    "httpx2>=2.12.0",
+    "psycopg[binary]>=3.2",
+    "uvicorn>=0.30",
+    "websockets>=13.0,<14.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+# 整体安装包只持有依赖元数据，源码分别由五个子包唯一持有。
+bypass-selection = true
+only-include = []
+exclude = ["**"]
+
+# The aggregate sdist builds the same metadata-only wheel as the workspace.
+[tool.hatch.build.targets.sdist]
+include = ["/pyproject.toml", "/LICENSE", "/NOTICE", "/README.md"]
+
+[tool.uv]
+package = true
+
+[tool.uv.workspace]
+members = [
+    "pkgs/autophone-kernel",
+    "pkgs/autophone-rig",
+    "pkgs/autophone-domain",
+    "pkgs/autophone-console",
+]
+
+[tool.uv.sources]
+autophone-kernel = { workspace = true }
+autophone-rig = { workspace = true }
+autophone-domain = { workspace = true }
+autophone-console = { workspace = true }
+
+
+# 静态检查：只固化语法错、未定义名、坏比较、失效的 f-string、未使用 import 与重复定义。
+# `target-version` 由 `requires-python` 推断。
+[tool.ruff]
+extend-exclude = [
+    "experiments/",
+    "demo-verification/",
+]
+
+[tool.ruff.lint]
+select = ["E9", "F63", "F7", "F82", "F401", "F811", "F821"]
+
+[tool.ruff.lint.per-file-ignores]
+"autophone/**/*.py" = ["F401"]
+"apps/**/*.py" = ["F401"]
+"scripts/**/*.py" = ["F401"]
+"tools/**/*.py" = ["F401"]
+"tests/test_install_fact_convergence.py" = ["F811"]
+
+[tool.pytest.ini_options]
+# 默认只收集现行测试；运行产物中的历史 checkout 不参与收集。
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "--import-mode=importlib --strict-markers"
+markers = [
+  "live_device: 需要活 VM / 真 UDS socket；CI 默认排除",
+  "live_frida: 需要 guest frida-server 与 27042 隧道；CI 默认排除",
+  # 主层级 marker（五者互斥，由 tests/conftest.py 自动补齐）
+  "unit: 单层组件的纯逻辑；无跨阶段协作，也不起进程 / 线程 / 端口。默认层级",
+  "contract: 契约、Schema、静态资源与注册表完整性；断言的是约定本身",
+  "integration: 宿主组件集成；HTTP / CLI / 后台线程 / 本机文件系统与子进程",
+  "flow: 跨阶段流程与模拟 E2E；设备与外部服务由 fake、临时目录或 dry-run 替换",
+  "device_e2e: 真实 VM / 真机 / frida / SSH；由 live_device、live_frida 推出，CI 默认排除",
+]

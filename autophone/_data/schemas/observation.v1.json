@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/observation.v1.json",
+  "title": "ImpactObservation",
+  "description": "一次真实页面迁移的事实记录。append-only：由 action mark、API capture、前后 screen checkpoint 和 ConsumerContext 确定性合并而来，只描述『发生了什么』，不声称字段因果——因果属于 field-binding.v1 的 confidence。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run_id", "app", "build", "seq", "action", "from", "to", "status"],
+  "properties": {
+    "schema_version": { "const": "v1" },
+    "run_id": { "type": "string", "minLength": 1 },
+    "app": { "type": "string", "minLength": 1 },
+    "build": { "type": "string", "minLength": 1, "description": "采集时的 app build；与 binding build 不符即触发 stale 标定" },
+    "seq": { "type": "integer", "minimum": 0, "description": "run 内单调递增序号；合并器按 action mark 顺序分配" },
+    "action_id": { "type": "string", "minLength": 1, "description": "跨 ActionResult、API mark 与知识 Observation 的稳定动作标识；历史采集可缺失，由知识编译适配器确定性派生" },
+    "subject_epoch_ref": { "type": "string", "minLength": 1, "description": "实际被观测进程的 Subject Epoch；历史采集可缺失，缺失时知识编译结果保持未确认身份" },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "description": "触发这次迁移的动作。kind=cold_start 时没有 operation/step（冷启动到首屏）。",
+      "properties": {
+        "kind": { "enum": ["cold_start", "operation_step", "refresh", "manual"] },
+        "operation": { "type": "string", "minLength": 1 },
+        "step": { "type": "string", "minLength": 1 },
+        "step_index": { "type": "integer", "minimum": 0 },
+        "safety": { "enum": ["read_only", "mutating"], "description": "缺省按 read_only 处理前必须先过 admission；mutating 动作要求 effect 已获准" },
+        "effects": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "t_start": { "type": "number", "description": "action mark 时刻（epoch 秒）。归因窗口下界，必须早于被归因请求的 t_req" },
+        "t_end": { "type": "number", "description": "归因窗口上界（含 quiet window）" }
+      }
+    },
+    "from": { "$ref": "#/$defs/screen_state" },
+    "to": { "$ref": "#/$defs/screen_state" },
+    "context_ref": { "type": "string", "minLength": 1, "description": "该 run 的 ConsumerContext 相对路径（脱敏后）" },
+    "api_refs": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "指回原始 capture 的引用，如 planes/api/capture.jsonl#task_ptr=0x1234；raw body 不进 observation"
+    },
+    "endpoints": {
+      "type": "array",
+      "description": "归因到本次动作的接口（已标准化，无真实门店/商品/账号/订单 ID）",
+      "items": { "$ref": "#/$defs/endpoint_hit" }
+    },
+    "frame_refs": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "status": { "enum": ["passed", "failed", "blocked"] },
+    "blocker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "description": "status != passed 时的失败分型（§7.4 第 6 条）",
+      "properties": {
+        "kind": { "enum": ["login", "location", "store", "product", "order", "screen", "operation", "effect_not_admitted", "api_capture"] },
+        "detail": { "type": "string" }
+      }
+    }
+  },
+  "$defs": {
+    "screen_state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["screen_id"],
+      "description": "页面身份 = screen skeleton 匹配到的 screen_id + 归一化 variant；截图 hash 只做证据去重，不参与身份判定",
+      "properties": {
+        "screen_id": { "type": "string", "minLength": 1, "description": "未识别页面用 unknown，并配 checkpoint.matched=false" },
+        "variant": {
+          "type": "object",
+          "additionalProperties": { "type": ["string", "number", "boolean", "null"] },
+          "description": "归一化消费上下文投影（履约模式/门店/会员/购物车/订单等），不含真实业务 ID"
+        },
+        "checkpoint": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "screen 匹配证据（matched/score/hits），来自 screens.match_screen"
+        },
+        "frame_ref": { "type": "string", "minLength": 1 }
+      }
+    },
+    "endpoint_hit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["endpoint_key", "method", "host_alias", "path_template"],
+      "properties": {
+        "endpoint_key": { "type": "string", "minLength": 1, "description": "METHOD + normalized_host_alias + normalized_path_template" },
+        "method": { "type": "string", "minLength": 1 },
+        "host_alias": { "type": "string", "minLength": 1 },
+        "path_template": { "type": "string", "minLength": 1 },
+        "status": { "type": ["integer", "null"] },
+        "ms": { "type": ["number", "null"] },
+        "trigger": {
+          "enum": ["on_enter", "refresh", "prefetch", "submit", "unknown"],
+          "description": "触发分类；prefetch/unknown 不得作为页面归因主证据（§8 第 3 条）"
+        },
+        "noise": { "type": "boolean", "description": "命中 noise catalog（心跳/埋点/预加载）；不参与字段绑定" },
+        "response_paths": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "本次响应里出现的（已裁剪的）JSONPath 候选，只留结构不留值"
+        },
+        "api_ref": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/gate-result.v1.json",
+  "title": "Package gate result",
+  "description": "Derived package validation report. The install/run artifacts remain the source of truth; this file records the gate orchestration and cross-run diff.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "gate_id", "app", "slot", "status", "installed", "run", "baseline", "diff", "flaky_excluded", "warnings"],
+  "properties": {
+    "schema_version": { "const": "v1" },
+    "gate_id": { "type": "string", "minLength": 1 },
+    "app": { "type": "string", "minLength": 1 },
+    "slot": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["installing", "running", "diffed", "passed", "failed", "error", "no_baseline"] },
+    "installed": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["slot"],
+      "properties": {
+        "slot": { "type": "string", "minLength": 1 },
+        "version": { "type": ["string", "null"] },
+        "sha256": { "type": ["string", "null"] },
+        "verified": { "type": ["boolean", "null"] }
+      }
+    },
+    "run": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "run_id": { "type": ["string", "null"] },
+        "run_dir": { "type": ["string", "null"] },
+        "status": { "type": ["string", "null"] }
+      }
+    },
+    "baseline_policy": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["requested", "resolved"],
+      "properties": {
+        "requested": { "enum": ["auto", "previous_build_same_slot", "previous_released_slot", "explicit_build"] },
+        "resolved": { "enum": ["auto", "previous_build_same_slot", "previous_released_slot", "explicit_build"] },
+        "build_ref": { "oneOf": [{ "$ref": "registry-build-ref.v1.json" }, { "type": "null" }] }
+      },
+      "description": "本次 Gate 使用的基线策略与解析出的基线 Build；缺少确认身份时 build_ref 为 null 并附 warning"
+    },
+    "baseline": {
+      "type": ["object", "null"],
+      "additionalProperties": true,
+      "properties": {
+        "run_id": { "type": "string", "minLength": 1 },
+        "run_dir": { "type": "string", "minLength": 1 },
+        "device_version": { "type": ["string", "null"] }
+      }
+    },
+    "diff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["newly_failed", "fixed", "still_failed", "new_case", "removed_case"],
+      "properties": {
+        "newly_failed": { "$ref": "#/$defs/caseDiffs" },
+        "fixed": { "$ref": "#/$defs/caseDiffs" },
+        "still_failed": { "$ref": "#/$defs/caseDiffs" },
+        "new_case": { "$ref": "#/$defs/caseDiffs" },
+        "removed_case": { "$ref": "#/$defs/caseDiffs" }
+      }
+    },
+    "flaky_excluded": { "$ref": "#/$defs/caseDiffs" },
+    "visual_diff": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["code", "message"],
+        "properties": {
+          "code": { "type": "string", "minLength": 1 },
+          "message": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "created_at": { "type": "string", "minLength": 1 },
+    "updated_at": { "type": "string", "minLength": 1 }
+  },
+  "$defs": {
+    "caseDiff": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["case_id"],
+      "properties": {
+        "case_id": { "type": "string", "minLength": 1 },
+        "current_status": { "type": ["string", "null"] },
+        "baseline_status": { "type": ["string", "null"] },
+        "current_detail": { "type": ["string", "null"] },
+        "baseline_detail": { "type": ["string", "null"] },
+        "flaky": { "type": "boolean" }
+      }
+    },
+    "caseDiffs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/caseDiff" }
+    }
+  }
+}

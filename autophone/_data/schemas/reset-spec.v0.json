@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "reset-spec.v0.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "reset-spec/v0"
+    },
+    "device_axis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "strategy"
+      ],
+      "properties": {
+        "strategy": {
+          "enum": [
+            "verify_ready",
+            "terminate_app"
+          ]
+        },
+        "bundle_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expected": {
+          "type": "object"
+        },
+        "target": {
+          "type": "object"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "strategy": {
+                "const": "terminate_app"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "bundle_id"
+            ]
+          }
+        }
+      ]
+    },
+    "external_fixture_axis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required"
+      ],
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "adapter": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target": {
+          "type": "object",
+          "required": [
+            "resource_id"
+          ],
+          "properties": {
+            "resource_id": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "expected": {
+          "type": "object",
+          "minProperties": 1
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "required": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "adapter",
+              "target",
+              "expected"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

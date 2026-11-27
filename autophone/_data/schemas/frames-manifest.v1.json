@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/frames-manifest.v1.json",
+  "title": "Screen baseline frames manifest",
+  "description": "Registry for screen baseline frames. Image blobs are large artifacts; this manifest is the git-friendly source of truth.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "app", "build", "preview_size", "frames"],
+  "properties": {
+    "schema_version": { "const": "v1" },
+    "app": { "type": "string", "minLength": 1 },
+    "build": { "type": "string", "minLength": 1 },
+    "preview_size": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": { "type": "integer", "minimum": 1 }
+    },
+    "threshold": { "type": "number", "minimum": 0, "maximum": 1 },
+    "frames": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["screen_id", "file", "sha256", "source_run_dir", "captured_at"],
+        "properties": {
+          "screen_id": { "type": "string", "minLength": 1 },
+          "file": { "type": "string", "minLength": 1 },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "source_run_dir": { "type": "string", "minLength": 1 },
+          "comparison_source": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "run_id",
+              "operation_result_sha256"
+            ],
+            "properties": {
+              "run_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "operation_result_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "capture_events_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "capture_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          },
+          "captured_at": { "type": "string", "minLength": 1 },
+          "volatile_regions": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    }
+  }
+}

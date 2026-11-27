@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "package-migration-receipt.v1.json",
+  "title": "IPA package store v1 → v2 migration receipt",
+  "description": "一次已执行的 v1 → v2 迁移的不可变记录，落在 packages/<app>/migrations/<migration_id>.json。exclusions 逐条记录人工「排除裁定」：被排除的 Artifact 退出冲突门、Source Revision 保持 unknown，原冲突声明与逐文件证据哈希原样保留在本文件里，历史 iteration.json 不被改写。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "migration_id",
+    "app",
+    "migrated_at",
+    "source_schema_version",
+    "result_manifest_sha256",
+    "exclusions"
+  ],
+  "properties": {
+    "schema_version": {"const": "v1"},
+    "migration_id": {"type": "string", "pattern": "^mig-[0-9a-f]{16,64}$"},
+    "app": {"type": "string", "minLength": 1},
+    "migrated_at": {"type": "string", "minLength": 1},
+    "source_schema_version": {"type": "string", "minLength": 1},
+    "source_manifest_sha256": {
+      "type": ["string", "null"],
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "迁移前 manifest.json 的字节摘要；null 表示迁移前无该文件"
+    },
+    "result_manifest_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "写入的 v2 manifest 规范化 JSON 摘要，非文件字节摘要"
+    },
+    "version_slots": {"type": "integer", "minimum": 0},
+    "builds": {"type": "integer", "minimum": 0},
+    "notes": {"type": "array", "items": {"type": "object"}},
+    "exclusions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code", "artifact_sha256", "reason", "decided_at", "decided_by",
+          "withdrawn_claims", "resulting_source_revision"
+        ],
+        "properties": {
+          "code": {"const": "excluded_by_decision"},
+          "artifact_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "reason": {"type": "string", "minLength": 1},
+          "decided_at": {"type": "string", "minLength": 1},
+          "decided_by": {"type": "string", "minLength": 1},
+          "registered_legacy_slots": {"type": "array", "items": {"type": "string"}},
+          "matched_no_evidence": {
+            "type": "boolean",
+            "description": "裁定所指 Artifact 在来源证据中没有任何声明；记录事实，不阻断"
+          },
+          "withdrawn_claims": {
+            "type": "array",
+            "description": "被裁定撤回的全部 Source Revision 声明及其证据文件哈希",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["source_revision", "evidence"],
+              "properties": {
+                "source_revision": {"type": "object"},
+                "evidence": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["path", "sha256"],
+                    "properties": {
+                      "path": {"type": "string", "minLength": 1},
+                      "sha256": {"type": ["string", "null"]}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "resulting_source_revision": {
+            "type": "object",
+            "description": "裁定后该 Artifact 的 Source Revision；排除是撤回声明，不是选定来源，故恒为 unknown",
+            "required": ["kind"],
+            "properties": {"kind": {"const": "unknown"}}
+          },
+          "suppressed_conflict": {
+            "type": "object",
+            "description": "若该 Artifact 原本触发冲突门，这里保留与 plan 预览同形状的原冲突记录",
+            "required": ["code", "artifact_sha256", "claims"],
+            "properties": {
+              "code": {"const": "source_revision_conflict"},
+              "artifact_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+              "claims": {"type": "array"}
+            }
+          }
+        }
+      }
+    }
+  }
+}

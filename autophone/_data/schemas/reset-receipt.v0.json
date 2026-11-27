@@ -1,0 +1,197 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "reset-receipt.v0.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "binding",
+    "policy_sha256",
+    "observed_at",
+    "device_axis",
+    "external_fixture_axis",
+    "runtime_readiness",
+    "record_sha256"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "reset-receipt/v0"
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assignment_id",
+        "attempt_no",
+        "fencing",
+        "host_id",
+        "rig_id",
+        "rig_generation"
+      ],
+      "properties": {
+        "assignment_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "attempt_no": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "fencing": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "host_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rig_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rig_generation": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "policy_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "observed_at": {
+      "type": "string"
+    },
+    "device_axis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required",
+        "target",
+        "expected",
+        "action_result",
+        "verification",
+        "disposition"
+      ],
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "target": {
+          "type": "object"
+        },
+        "expected": {
+          "type": "object"
+        },
+        "action_result": {
+          "type": "object",
+          "required": [
+            "status"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "succeeded",
+                "failed",
+                "not_required"
+              ]
+            }
+          }
+        },
+        "verification": {
+          "type": "object",
+          "required": [
+            "status"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "passed",
+                "failed",
+                "not_required"
+              ]
+            }
+          }
+        },
+        "disposition": {
+          "enum": [
+            "reusable",
+            "quarantine",
+            "restored",
+            "failed",
+            "not_required"
+          ]
+        }
+      }
+    },
+    "external_fixture_axis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required",
+        "target",
+        "expected",
+        "action_result",
+        "verification",
+        "disposition"
+      ],
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "target": {
+          "type": "object"
+        },
+        "expected": {
+          "type": "object"
+        },
+        "action_result": {
+          "type": "object",
+          "required": [
+            "status"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "succeeded",
+                "failed",
+                "not_required"
+              ]
+            }
+          }
+        },
+        "verification": {
+          "type": "object",
+          "required": [
+            "status"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "passed",
+                "failed",
+                "not_required"
+              ]
+            }
+          }
+        },
+        "disposition": {
+          "enum": [
+            "reusable",
+            "quarantine",
+            "restored",
+            "failed",
+            "not_required"
+          ]
+        }
+      }
+    },
+    "runtime_readiness": {
+      "type": "object"
+    },
+    "record_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

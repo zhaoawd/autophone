@@ -1,0 +1,35 @@
+# M3 — 每个用例期望的后端 API 调用 + 字段约束（§七）。
+# 结构：<CASE_ID>: { expect: [ {step?, match{method,url_glob}, assert{...}} ], forbid: [...] }
+# assert 键：status / resp.<json路径> / req.<json路径>（body 前缀可省）。
+# 易变字段（sign/time/token）用 "*present*" 或 "*regex:<pat>*" 只校验存在性/格式，不硬比对值（§九）。
+# ${var} 从 fixture 上下文（造单回传 order_id 等）模板替换。
+
+# ── 可对真实抓取数据验证的（本期已 live 抓到）──────────────────────────────
+CAP_DEMO:                         # 点登录页验证码 → 刷新触发验证码接口（M2 归因证明用例）
+  expect:
+    - step: tap_xy
+      match: { method: POST, url_glob: "*/auth/captcha*" }
+      assert:
+        status: 200
+        resp.errno: 0             # 业务成功码（该后端用 errno，非 resultCode）
+        resp.data.token: "*present*"   # token 是易变值，只校验存在
+
+R21:                              # 设置_检查更新 → updateCheck
+  expect:
+    - match: { method: POST, url_glob: "*/app/update/check*" }
+      assert:
+        status: 200
+        resp.errno: 0
+        resp.data.version: "*regex:\\d+\\.\\d+\\.\\d+*"   # 版本号格式，不硬比对具体值
+
+# ── 业务生命周期（设计示例；需登录态 + 造单 fixture，待 M2 登录卡点解除后 live）────
+R28_pickup:                       # 取餐
+  expect:
+    - step: tap_text
+      match: { method: POST, url_glob: "*/order/*/pickup*" }
+      assert:
+        status: 200
+        resp.resultCode: 0
+        req.order_id: "${order_id}"        # 来自造单 fixture 上下文
+  forbid:
+    - match: { url_glob: "*/order/*/deliver*" }   # 取餐步骤不该出现送达接口

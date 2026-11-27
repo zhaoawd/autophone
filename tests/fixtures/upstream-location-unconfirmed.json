@@ -1,0 +1,8 @@
+{
+  "ok": false,
+  "guest_error": {
+    "code": "location_readback_unconfirmed",
+    "message": "locationd did not confirm the requested simulated location"
+  },
+  "error": "locationd did not confirm the requested simulated location"
+}

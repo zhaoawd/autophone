@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/package-install-receipt.v2.json",
+  "title": "PackageInstallReceipt (v2)",
+  "description": "平台在某个 Target 上最近一次完成验证安装的回执，按 target_fingerprint 分文件保存于 packages/<app>/installations/。回执只表示平台侧安装事实；设备当前运行身份仍需 Device Build Observation 交叉核对。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "app", "build_ref", "verified", "installer",
+    "target", "target_fingerprint", "installed_at"
+  ],
+  "properties": {
+    "schema_version": {"const": "v2"},
+    "app": {"type": "string", "minLength": 1},
+    "build_ref": {"$ref": "registry-build-ref.v1.json"},
+    "verified": {"type": "boolean"},
+    "installer": {"type": "string", "minLength": 1},
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["device", "vm", "vm_dir", "socket"],
+      "properties": {
+        "device": {"type": "string", "minLength": 1},
+        "vm": {"type": "string", "minLength": 1},
+        "vm_dir": {"type": "string", "minLength": 1},
+        "socket": {"type": "string", "minLength": 1}
+      }
+    },
+    "target_fingerprint": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "installed_at": {"type": "string", "minLength": 1}
+  }
+}

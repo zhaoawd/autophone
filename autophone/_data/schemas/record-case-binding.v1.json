@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RecordingCaseBinding",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["step_bindings", "bindings"],
+  "properties": {
+    "step_bindings": {"type": "array", "minItems": 1, "items": {
+      "type": "object", "additionalProperties": false,
+      "required": ["case_step_index", "step_indices"],
+      "properties": {
+        "case_step_index": {"type": "integer", "minimum": 0},
+        "step_indices": {"type": "array", "minItems": 1, "uniqueItems": true,
+          "items": {"type": "integer", "minimum": 0}}
+      }
+    }},
+    "bindings": {"type": "array", "minItems": 1, "items": {
+      "type": "object", "additionalProperties": false,
+      "required": ["expect_index", "after_step", "assertion"],
+      "properties": {
+        "expect_index": {"type": "integer", "minimum": 0},
+        "after_step": {"type": "integer", "minimum": 0},
+        "assertion": {"oneOf": [
+          {"type": "object", "required": ["action"], "not": {"required": ["operation"]},
+            "properties": {"action": {"type": "string", "minLength": 1},
+                           "screen_id": {"type": "string", "minLength": 1}}},
+          {"type": "object", "required": ["operation"], "additionalProperties": false,
+            "properties": {"operation": {"type": "string", "minLength": 1}, "args": {"type": "object"}}}
+        ]}
+      }
+    }}
+  }
+}

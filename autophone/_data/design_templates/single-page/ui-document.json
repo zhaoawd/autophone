@@ -1,0 +1,136 @@
+{
+  "schema_version": "ui-prototype-document/v1",
+  "name": "偏好页",
+  "tokens": {
+    "color.canvas": {
+      "type": "color",
+      "value": "#FFF9F1"
+    },
+    "color.text": {
+      "type": "color",
+      "value": "#1D1D1D"
+    },
+    "color.accent": {
+      "type": "color",
+      "value": "#B94A00"
+    },
+    "color.selection": {
+      "type": "color",
+      "value": "#FFEBD6"
+    },
+    "dimension.control": {
+      "type": "dimension",
+      "value": 44
+    },
+    "radius.control": {
+      "type": "dimension",
+      "value": 14
+    },
+    "type.body": {
+      "type": "typography",
+      "value": {
+        "fontSize": 14,
+        "fontWeight": 400,
+        "lineHeight": 20
+      }
+    }
+  },
+  "screens": [
+    {
+      "id": "home",
+      "name": "偏好页",
+      "root": {
+        "id": "home.root",
+        "component": "Screen",
+        "style": {
+          "backgroundColor": "$color.canvas",
+          "color": "$color.text"
+        },
+        "children": [
+          {
+            "id": "home.preferences",
+            "component": "ChoiceGroup",
+            "layout": {
+              "columns": 2,
+              "gap": 8
+            },
+            "slot_styles": {
+              "option": {
+                "borderColor": "$color.text",
+                "borderRadius": "$radius.control",
+                "borderWidth": 1,
+                "minHeight": 44
+              },
+              "option_selected": {
+                "backgroundColor": "$color.selection",
+                "borderColor": "$color.accent",
+                "color": "$color.accent"
+              }
+            },
+            "props": {
+              "title": "辣度",
+              "note": "单选",
+              "mode": "single",
+              "options_source": "spice_options",
+              "selected_path": "values.spice",
+              "stable_id_prefix": "home.spice"
+            }
+          },
+          {
+            "id": "home.summary",
+            "component": "Text",
+            "stable_id": "home.summary",
+            "style": {
+              "typography": "$type.body"
+            },
+            "props": {
+              "text_path": "view.summary"
+            }
+          },
+          {
+            "id": "home.save",
+            "component": "Button",
+            "stable_id": "home.actions.save",
+            "props": {
+              "label": "保存"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "interactions": [
+    {
+      "id": "home.save",
+      "trigger": {
+        "type": "press",
+        "target_stable_id": "home.actions.save"
+      },
+      "action": {
+        "type": "save"
+      }
+    }
+  ],
+  "prototype": {
+    "start_screen_id": "home"
+  },
+  "acceptance": [
+    {
+      "screen_id": "home",
+      "targets": [
+        {
+          "stable_id": "home.summary",
+          "properties": [
+            "text"
+          ]
+        },
+        {
+          "stable_id": "home.actions.save",
+          "properties": [
+            "text"
+          ]
+        }
+      ]
+    }
+  ]
+}

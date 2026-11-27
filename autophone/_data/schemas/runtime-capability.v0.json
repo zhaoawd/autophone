@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "runtime-capability.v0.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "observed_at",
+    "runtime_info",
+    "runtime_identity",
+    "capabilities"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "runtime-capability/v0"
+    },
+    "observed_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "runtime_info": {
+      "type": "object"
+    },
+    "runtime_identity": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "state",
+          "contract_version",
+          "mode",
+          "declaration",
+          "readback",
+          "observed_at",
+          "connection_generation",
+          "reason"
+        ],
+        "properties": {
+          "state": {
+            "enum": [
+              "supported",
+              "unsupported",
+              "unprobed",
+              "mismatch"
+            ]
+          },
+          "mode": {
+            "enum": [
+              "required",
+              "advisory",
+              "disabled"
+            ]
+          },
+          "contract_version": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

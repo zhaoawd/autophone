@@ -1,0 +1,179 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/ai-result.v1.json",
+  "title": "AiResult",
+  "description": "本地 agent CLI 调用结果契约（platform-ai-capability §2.1）。fail-closed：非零退出/超时/请求了 json_schema 却拿不到可解析 JSON → ok=false + error，绝不静默返回空当成功。resolved provider/model/cli_version 必须回写，杜绝 auto 静默漂移。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "ok",
+    "text",
+    "provider"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "v1"
+    },
+    "ok": {
+      "type": "boolean",
+      "description": "调用是否成功；false 时 error 必填"
+    },
+    "text": {
+      "type": "string",
+      "description": "agent 文本输出（可空字符串）"
+    },
+    "json": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "AiRequest.json_schema 非空时解析填充，否则 null"
+    },
+    "provider": {
+      "enum": [
+        "claude",
+        "codex"
+      ],
+      "description": "resolved 实际后端（auto 解析后必为具体值）"
+    },
+    "model": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "resolved 模型，回写防漂移"
+    },
+    "cli_version": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "调用时 CLI 版本（如 2.1.177 / codex-cli 0.130.0），留痕防 flag 漂移"
+    },
+    "cost_usd": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "从 CLI 结果元数据回读的成本，写进 run"
+    },
+    "duration_s": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "raw_path": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "stdout/结果原文落盘路径（run 目录内，证据 + 排障锚点）"
+    },
+    "error": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "ok=false 时的失败原因；ok=true 时 null"
+    },
+    "usage": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "可选留痕：CLI 结果元数据回报的 token 用量（claude 信封 usage / codex 最后一条 turn.completed 的 usage）；缺省即未回报，不影响 ok 判定"
+    },
+    "reported_models": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "可选留痕：CLI 回报的实际模型标识（claude 信封 modelUsage 的键）；与请求口径的 model 分开记录"
+    },
+    "max_budget_usd": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "exclusiveMinimum": 0,
+      "description": "可选留痕：调用方声明的单次成本上限（美元）；缺省即未声明上限"
+    },
+    "error_code": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "description": "可选：结构化拒绝码（如单次预算 fail-closed 的 ai_budget_exceeded / ai_budget_cost_unreported / ai_budget_limit_unsupported；设备通道的 device_tool_call_denied / device_trace_empty / device_authority_required；CLI 未登录或凭据被拒的 ai_cli_not_authenticated）；缺省即无结构化码"
+    },
+    "stop_budget_usd": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "exclusiveMinimum": 0,
+      "description": "可选留痕：下发给 CLI 的停止阈值（claude --max-budget-usd）；与授权上限 max_budget_usd 分开记录；缺省即停止阈值等于授权上限或未声明"
+    },
+    "budget_overrun_usd": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "exclusiveMinimum": 0,
+      "description": "可选留痕：回报成本超出授权上限 max_budget_usd 的金额（美元）；缺省即未超出或无法计算"
+    },
+    "device_tool_trace": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "可选留痕：tools=device 从事件流统计的 vphone MCP 调用（codex `--json` 的 mcp_tool_call；claude `stream-json` 的 tool_use / tool_result.is_error / permission_denials）。denied>0 时 ok=false；缺省即该通道不回报事件流",
+      "additionalProperties": false,
+      "required": [
+        "server",
+        "attempted",
+        "completed",
+        "failed",
+        "denied",
+        "errors"
+      ],
+      "properties": {
+        "server": {
+          "type": "string",
+          "minLength": 1
+        },
+        "attempted": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "completed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "denied": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "errors": {
+          "type": "array",
+          "maxItems": 5,
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

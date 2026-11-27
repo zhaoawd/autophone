@@ -1,0 +1,342 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "operation-ax-checkpoint.v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "identity",
+    "checkpoint",
+    "shot_sha256",
+    "snapshot",
+    "build_identity",
+    "build_evidence"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "v2"
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "run_id",
+        "app",
+        "build",
+        "operation",
+        "bundle_id"
+      ],
+      "properties": {
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "app": {
+          "type": "string",
+          "minLength": 1
+        },
+        "build": {
+          "type": "string",
+          "minLength": 1
+        },
+        "bundle_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operation": {
+          "type": "object",
+          "required": [
+            "id",
+            "name",
+            "revision"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        }
+      }
+    },
+    "checkpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "expected",
+        "matched",
+        "shot",
+        "attempt"
+      ],
+      "properties": {
+        "expected": {
+          "type": "string",
+          "minLength": 1
+        },
+        "matched": {
+          "type": "string",
+          "minLength": 1
+        },
+        "shot": {
+          "type": "string",
+          "minLength": 1
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "shot_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "ax_backend": {
+      "enum": [
+        "frida_inproc",
+        "guest_axruntime"
+      ],
+      "description": "产出该检查点快照时冻结的 AX 观测后端。"
+    },
+    "snapshot": {
+      "type": "object",
+      "required": [
+        "schema",
+        "evidence_protocol",
+        "request_id",
+        "captured_at_ms",
+        "app",
+        "complete",
+        "truncated",
+        "screen",
+        "nodes",
+        "bundle_version",
+        "short_version"
+      ],
+      "properties": {
+        "schema": {
+          "const": "autophone.ax/1"
+        },
+        "evidence_protocol": {
+          "const": 1
+        },
+        "request_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "captured_at_ms": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "app": {
+          "type": "string",
+          "minLength": 1
+        },
+        "complete": {
+          "const": true
+        },
+        "truncated": {
+          "const": false
+        },
+        "bundle_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "short_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ax_backend": {
+          "enum": [
+            "frida_inproc",
+            "guest_axruntime"
+          ],
+          "description": "产出该 AX 快照时冻结的观测后端。"
+        },
+        "snapshot_kind": {
+          "enum": [
+            "ui_structure",
+            "inproc_graybox"
+          ],
+          "description": "快照结构类别：ui_structure 为跨后端通用 UI 结构树，inproc_graybox 为进程内灰盒状态快照。"
+        },
+        "screen": {
+          "type": "object",
+          "required": [
+            "scale",
+            "w",
+            "h"
+          ],
+          "properties": {
+            "scale": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "w": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "h": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          }
+        },
+        "nodes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4000,
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "label",
+              "role",
+              "traits",
+              "enabled",
+              "value",
+              "identifier",
+              "frame"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "label": {
+                "type": "string"
+              },
+              "role": {
+                "type": "string",
+                "minLength": 1
+              },
+              "traits": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "enabled": {
+                "type": "boolean"
+              },
+              "value": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "identifier": {
+                "type": "string"
+              },
+              "frame": {
+                "type": "array",
+                "minItems": 4,
+                "maxItems": 4,
+                "items": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "build_identity": {
+      "oneOf": [
+        {
+          "$ref": "build-identity.v1.json"
+        },
+        {
+          "$ref": "build-identity.v2.json"
+        }
+      ]
+    },
+    "build_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "package",
+        "sources"
+      ],
+      "properties": {
+        "package": {
+          "type": "object",
+          "required": [
+            "registry_build_ref",
+            "device_build_observation",
+            "build_identity_match",
+            "comparison_granularity",
+            "comparison_build_id"
+          ],
+          "properties": {
+            "build_identity_match": {
+              "const": "match"
+            },
+            "comparison_granularity": {
+              "enum": [
+                "build_marker",
+                "info_plist"
+              ]
+            }
+          }
+        },
+        "sources": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "run-submission.json",
+            "world-identity.json"
+          ],
+          "properties": {
+            "run-submission.json": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "path",
+                "sha256"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              }
+            },
+            "world-identity.json": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "path",
+                "sha256"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "package-manifest.v1.json",
+  "title": "IPA package store manifest (v1)",
+  "description": "Ordered registry of uploadable IPA builds for one app. The store lives on the host under packages/<app>/; slot prefixes give a stable order for switching which build is installed into the VM.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "app", "packages"],
+  "properties": {
+    "schema_version": {"const": "v1"},
+    "app": {"type": "string", "minLength": 1},
+    "bundle_id": {"type": ["string", "null"]},
+    "default_slot": {
+      "type": ["string", "null"],
+      "description": "Default slot selected when a caller omits an explicit Build. It does not describe device state."
+    },
+    "packages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["slot", "label", "file", "sha256", "size", "added_at"],
+        "properties": {
+          "slot": {
+            "type": "string",
+            "pattern": "^[0-9]{3,}$",
+            "description": "Zero-padded, monotonically increasing order key."
+          },
+          "label": {"type": "string", "minLength": 1},
+          "file": {"type": "string", "minLength": 1},
+          "bundle_id": {"type": ["string", "null"]},
+          "version": {"type": ["string", "null"]},
+          "release_like": {
+            "type": "boolean",
+            "description": "IPA 应用包内存在离线 JavaScript bundle；旧条目可省略，完整性校验后安全回填"
+          },
+          "release_evidence": {
+            "type": ["string", "null"],
+            "description": "release_like 的包内结构证据；旧条目可省略，完整性校验后安全回填"
+          },
+          "short_version": {"type": ["string", "null"], "description": "CFBundleShortVersionString; null means it was not recorded."},
+          "build_version": {"type": ["string", "null"], "description": "CFBundleVersion; null means it was not recorded."},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "size": {"type": "integer", "minimum": 0},
+          "added_at": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "candidate-activation-result.v1.json",
+  "type": "object",
+  "required": [
+    "activated",
+    "registry_candidate_ref",
+    "activation_id",
+    "authority"
+  ],
+  "properties": {
+    "activated": {
+      "type": "boolean"
+    },
+    "registry_candidate_ref": {
+      "$ref": "candidate-ref.v1.json"
+    },
+    "activation_id": {
+      "type": "string",
+      "pattern": "^activation-[0-9a-f]{32}$"
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assignment_id",
+        "attempt_no",
+        "fencing"
+      ],
+      "properties": {
+        "assignment_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "attempt_no": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "fencing": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "device_active_candidate_observation": {
+      "oneOf": [
+        {
+          "$ref": "active-candidate-identity.v1.json"
+        },
+        {
+          "$ref": "active-candidate-identity.v2.json"
+        }
+      ]
+    },
+    "identity_match": {
+      "type": "object",
+      "required": [
+        "state",
+        "evidence_role"
+      ],
+      "properties": {
+        "state": {
+          "const": "matched"
+        },
+        "evidence_role": {
+          "const": "identity_only"
+        }
+      }
+    },
+    "subject_epoch_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "receipt_ref": {
+      "type": "string",
+      "pattern": "^candidate-activations/activation-[0-9a-f]{32}\\.json$"
+    },
+    "publication": {
+      "type": "object",
+      "required": [
+        "host_id",
+        "rig_id",
+        "generation",
+        "observed_state"
+      ]
+    },
+    "reason": {
+      "type": "string"
+    },
+    "installation": {
+      "type": "object"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "activated": {
+            "const": true
+          },
+          "registry_candidate_ref": {
+            "properties": {
+              "candidate_kind": {
+                "const": "rn_update"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "device_active_candidate_observation",
+          "identity_match",
+          "subject_epoch_ref",
+          "receipt_ref",
+          "publication"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "activated": {
+            "const": true
+          },
+          "registry_candidate_ref": {
+            "properties": {
+              "candidate_kind": {
+                "const": "ipa"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "installation"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "activated": {
+            "const": false
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "reason"
+        ]
+      }
+    }
+  ],
+  "additionalProperties": false
+}

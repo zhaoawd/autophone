@@ -1,0 +1,167 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/impact-plan.v1.json",
+  "title": "ImpactPlan",
+  "description": "变更 → 受影响页面状态 → 安全路径的执行计划。plan 只声明打算做什么，不含执行结果；未获准 effect 的目标必须落在 blocked，不能静默执行相邻动作。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "app", "build", "change_id", "generated_at", "input_quality", "targets", "admission"],
+  "properties": {
+    "api_scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidence_type",
+        "rule_snapshot_hash",
+        "scenario"
+      ],
+      "properties": {
+        "evidence_type": {
+          "const": "controlled_api_change"
+        },
+        "rule_snapshot_hash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "scenario": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "properties": {
+            "path": {
+              "const": "impact/private/api-scenario.json"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        }
+      }
+    },
+    "schema_version": { "const": "v1" },
+    "app": { "type": "string", "minLength": 1 },
+    "build": { "type": "string", "minLength": 1 },
+    "change_id": { "type": "string", "minLength": 1 },
+    "env": { "type": "string" },
+    "generated_at": { "type": "string", "minLength": 1 },
+    "input_quality": {
+      "enum": ["key_endpoint_jsonpath", "key_endpoint", "key_only", "response_snapshot", "unusable"],
+      "description": "§10 输入能力分级：决定影响定位质量与降级策略"
+    },
+    "targets": { "type": "array", "items": { "$ref": "#/$defs/target" } },
+    "route_groups": {
+      "type": "array",
+      "description": "只读共享前缀合并结果（§11.2）；上下文冲突、含 effect、需严格 A/B 或跨外部 App 的目标必须各自成组",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["group_id", "target_ids"],
+        "properties": {
+          "group_id": { "type": "string", "minLength": 1 },
+          "target_ids": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+          "shared_prefix": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+          "split_reason": { "type": "string" }
+        }
+      }
+    },
+    "gaps": {
+      "type": "array",
+      "description": "无法定位到页面的输入：宁可显式记 gap，也不放宽成『整个 App 都可能受影响』",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "detail"],
+        "properties": {
+          "kind": {
+            "enum": ["no_binding", "endpoint_only_no_binding", "unusable_input", "unknown_screen", "route_unavailable", "stale_binding"]
+          },
+          "detail": { "type": "string", "minLength": 1 },
+          "data_key": { "type": "string" },
+          "endpoint_key": { "type": "string" }
+        }
+      }
+    },
+    "admission": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decision", "allowed_effects", "requested_effects", "denied_effects"],
+      "description": "Effect Admission 裁决（§2.1 第 7 条）：Prod 默认只读，profile.allowed_effects 空 = 全拒",
+      "properties": {
+        "decision": { "enum": ["read_only", "admitted", "not_admitted"] },
+        "allowed_effects": { "type": "array", "items": { "type": "string" } },
+        "requested_effects": { "type": "array", "items": { "type": "string" } },
+        "denied_effects": { "type": "array", "items": { "type": "string" } },
+        "note": { "type": "string" }
+      }
+    }
+  },
+  "$defs": {
+    "comparison_policy": {
+      "type": "object", "additionalProperties": false, "minProperties": 1,
+      "properties": {
+        "semantic_scope": { "const": "declared_target_regions" },
+        "source_selection": { "enum": ["terminal_cancelled_zero_bytes", "consistent_complete_response_set"] }
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target_id", "screen_id", "confidence", "execution"],
+      "properties": {
+        "target_id": { "type": "string", "pattern": "^T[0-9]+$" },
+        "binding_id": { "type": "string", "minLength": 1 },
+        "binding_revision": { "type": "integer", "minimum": 1 },
+        "binding_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "screen_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "comparison_policy": { "$ref": "#/$defs/comparison_policy" },
+        "data_keys": { "type": "array", "items": { "type": "string" } },
+        "endpoint_key": { "type": "string" },
+        "response_paths": { "type": "array", "items": { "type": "string" } },
+        "screen_id": { "type": "string", "minLength": 1 },
+        "variant_selector": { "type": "object", "additionalProperties": { "type": ["string", "number", "boolean", "null"] } },
+        "regions": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "confidence": { "enum": ["observed", "correlated", "causal", "stale"] },
+        "execution": {
+          "enum": ["execute", "advisory", "candidate", "blocked"],
+          "description": "causal→execute；correlated→advisory；observed→candidate；stale/未获准→blocked"
+        },
+        "blocked_reason": {
+          "enum": ["effect_not_admitted", "effect_declaration_missing", "route_unavailable", "stale_binding", "unknown_screen", "sensitive_cta"],
+          "description": "execution=blocked 时必填"
+        },
+        "required_context": { "type": "object", "additionalProperties": true },
+        "route": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status"],
+          "properties": {
+            "status": { "enum": ["ready", "unavailable"] },
+            "steps": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["operation"],
+                "properties": {
+                  "operation": { "type": "string", "minLength": 1 },
+                  "revision": { "type": "integer", "minimum": 1, "description": "规划时钉住的 Operation revision；执行前与当前资产复核" },
+                  "from": { "type": "string" },
+                  "to": { "type": "string" },
+                  "safety": { "enum": ["read_only", "mutating"] },
+                  "effects": { "type": "array", "items": { "type": "string" } }
+                }
+              }
+            },
+            "effects": { "type": "array", "items": { "type": "string" } },
+            "safety": { "enum": ["read_only", "mutating"] },
+            "reason": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

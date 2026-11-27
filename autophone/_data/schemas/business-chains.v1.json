@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/business-chains.v1.json",
+  "title": "BusinessChains",
+  "description": "App 级核心链路声明 apps/<app>/business_chains.yaml：Business Chain → Stage → Case Family 三级分类体系。声明只含 ID、标题、业务规则说明与 Asset Lifecycle，不含步骤、Operation、Screen、Fixture 或 Oracle。Case 以 family_id 引用 Family，成员关系只在 Case 上。Stage 列表顺序表示业务叙述顺序，不表示执行顺序。三类 ID 在 App 内共同唯一、App 名与目录一致、上下级生命周期一致由 autophone.assets.business_chains 另行校验。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "app", "chains"],
+  "properties": {
+    "schema": { "const": "autophone.business-chains/1" },
+    "app": { "type": "string", "pattern": "\\S" },
+    "chains": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/chain" }
+    }
+  },
+  "$defs": {
+    "entry_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]+(\\.[a-z0-9_]+)*$"
+    },
+    "status": { "enum": ["draft", "active", "deprecated", "archived"] },
+    "title": { "type": "string", "pattern": "\\S" },
+    "non_draft_requires_items": {
+      "if": {
+        "required": ["status"],
+        "properties": { "status": { "not": { "const": "draft" } } }
+      },
+      "then": { "properties": { "stages": { "minItems": 1 }, "families": { "minItems": 1 } } }
+    },
+    "chain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "status", "title", "stages"],
+      "properties": {
+        "id": { "$ref": "#/$defs/entry_id" },
+        "status": { "$ref": "#/$defs/status" },
+        "title": { "$ref": "#/$defs/title" },
+        "summary": { "type": "string" },
+        "stages": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/stage" }
+        }
+      },
+      "allOf": [{ "$ref": "#/$defs/non_draft_requires_items" }]
+    },
+    "stage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "status", "title", "families"],
+      "properties": {
+        "id": { "$ref": "#/$defs/entry_id" },
+        "status": { "$ref": "#/$defs/status" },
+        "title": { "$ref": "#/$defs/title" },
+        "families": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/family" }
+        }
+      },
+      "allOf": [{ "$ref": "#/$defs/non_draft_requires_items" }]
+    },
+    "family": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "status", "title"],
+      "properties": {
+        "id": { "$ref": "#/$defs/entry_id" },
+        "status": { "$ref": "#/$defs/status" },
+        "title": { "$ref": "#/$defs/title" },
+        "rule": { "type": "string" }
+      },
+      "if": {
+        "required": ["status"],
+        "properties": { "status": { "const": "active" } }
+      },
+      "then": {
+        "required": ["rule"],
+        "properties": { "rule": { "type": "string", "pattern": "\\S" } }
+      }
+    }
+  }
+}

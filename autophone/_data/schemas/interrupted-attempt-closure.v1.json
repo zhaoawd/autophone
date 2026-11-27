@@ -1,0 +1,203 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "interrupted-attempt-closure.v1.json",
+  "title": "被中断 Attempt 的资源闭包条目",
+  "description": "闭包恢复 Assignment 对一个 Lease 过期、终态 indeterminate 的 Attempt 的处置记录：journal 结算、残留资源清单、目标 App 终止与独立回读。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "interrupted_attempt",
+    "run_id",
+    "journal",
+    "residual_resources",
+    "app_termination",
+    "closure_state",
+    "reasons"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "interrupted-attempt-closure/v1"
+    },
+    "interrupted_attempt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assignment_id",
+        "attempt_no",
+        "fencing",
+        "rig_id",
+        "generation"
+      ],
+      "properties": {
+        "assignment_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "attempt_no": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "fencing": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "rig_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "generation": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "run_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "journal": {
+      "type": "object",
+      "required": [
+        "state",
+        "run_dir",
+        "version",
+        "record_sha256",
+        "reason"
+      ],
+      "properties": {
+        "state": {
+          "enum": [
+            "settled",
+            "already_settled",
+            "collected",
+            "result_published",
+            "not_found",
+            "failed"
+          ]
+        },
+        "run_dir": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "version": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "record_sha256": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "residual_resources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "kind",
+          "state"
+        ],
+        "properties": {
+          "kind": {
+            "enum": [
+              "app_process",
+              "frida_session",
+              "recording",
+              "screen_lock",
+              "stage_guard_token",
+              "artifact_spool",
+              "screen_execution_marker"
+            ]
+          },
+          "state": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "app_termination": {
+      "type": "object",
+      "required": [
+        "result",
+        "bundle_id",
+        "pid_before",
+        "pid_after",
+        "readback",
+        "reason"
+      ],
+      "properties": {
+        "result": {
+          "enum": [
+            "terminated",
+            "not_running",
+            "skipped",
+            "not_applicable",
+            "failed"
+          ]
+        },
+        "bundle_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "pid_before": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "pid_after": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "readback": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "terminate_error": {
+          "type": "string"
+        }
+      }
+    },
+    "closure_state": {
+      "enum": [
+        "closed",
+        "failed"
+      ]
+    },
+    "reasons": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

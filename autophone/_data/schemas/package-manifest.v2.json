@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "package-manifest.v2.json",
+  "title": "IPA package store manifest (v2)",
+  "description": "被测 App 的版本槽位与构建记录注册表。Version Slot 表示一个 CFBundleShortVersionString 的稳定顺序位置；同一 Version Slot 可包含多个不可变 Build Record。安装状态不再保存在本文件（见 package-install-receipt.v2.json 的 Target 级回执）。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "app", "version_slots", "builds"],
+  "properties": {
+    "schema_version": {"const": "v2"},
+    "app": {"type": "string", "minLength": 1},
+    "bundle_id": {"type": ["string", "null"]},
+    "default_slot": {
+      "type": ["string", "null"],
+      "description": "调用方未点名 Build 时选用的默认 Version Slot。只表达默认选择，不描述设备安装状态（安装状态见 package-install-receipt.v2.json 的 Target 级回执）"
+    },
+    "version_slots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["slot", "short_version", "candidate_build_id", "created_at"],
+        "properties": {
+          "slot": {
+            "type": "string",
+            "pattern": "^[0-9]{3,}$",
+            "description": "零填充、按版本首次登记顺序递增；创建后不修改"
+          },
+          "short_version": {
+            "type": ["string", "null"],
+            "description": "CFBundleShortVersionString；null 仅用于 legacy/force 导入的未知版本组"
+          },
+          "candidate_build_id": {"type": ["string", "null"]},
+          "created_at": {"type": "string", "minLength": 1},
+          "archived": {"type": "boolean"}
+        }
+      }
+    },
+    "builds": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["build_id", "slot", "artifact", "added_at"],
+        "properties": {
+          "build_id": {
+            "type": "string",
+            "pattern": "^bld-[0-9a-f]{12,64}$",
+            "description": "对 app+slot+short_version+build_version+source_revision+artifact_sha256 的规范化摘要"
+          },
+          "slot": {"type": "string", "pattern": "^[0-9]{3,}$"},
+          "label": {"type": ["string", "null"]},
+          "bundle_id": {
+            "type": ["string", "null"],
+            "description": "IPA 自带的 CFBundleIdentifier；与 App 级 bundle_id 不一致本身是可观测事实"
+          },
+          "build_version": {
+            "type": ["string", "null"],
+            "description": "CFBundleVersion；不与 short_version 互相回退"
+          },
+          "source_revision": {"$ref": "#/$defs/source_revision"},
+          "artifact": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["file", "sha256", "size"],
+            "properties": {
+              "file": {"type": "string", "minLength": 1},
+              "store_id": {"type": "string", "minLength": 1},
+              "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+              "size": {"type": "integer", "minimum": 0}
+            }
+          },
+          "artifact_availability": {"enum": ["present", "pruned"]},
+          "retention_class": {"enum": ["unspecified", "iteration", "candidate", "accepted", "baseline"]},
+          "release_like": {"type": "boolean"},
+          "release_evidence": {"type": ["string", "null"]},
+          "legacy_slot": {"type": ["string", "null"]},
+          "added_at": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "legacy_slot_aliases": {
+      "type": "object",
+      "additionalProperties": {"type": "string", "pattern": "^bld-[0-9a-f]{12,64}$"},
+      "description": "旧 slot → Build ID；仅供 v1 上下文的历史引用解析"
+    }
+  },
+  "$defs": {
+    "source_revision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "state"],
+      "properties": {
+        "kind": {"enum": ["git_commit", "source_tree", "unknown"]},
+        "state": {"enum": ["clean", "dirty", "generated", "unknown"]},
+        "commit_sha": {"type": ["string", "null"], "pattern": "^[0-9a-f]{40}$"},
+        "base_commit_sha": {"type": ["string", "null"], "pattern": "^[0-9a-f]{40}$"},
+        "tree_sha256": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"kind": {"const": "git_commit"}}, "required": ["kind"]},
+          "then": {
+            "required": ["commit_sha"],
+            "properties": {
+              "commit_sha": {"type": "string"},
+              "state": {"const": "clean"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"kind": {"const": "source_tree"}}, "required": ["kind"]},
+          "then": {
+            "required": ["tree_sha256"],
+            "properties": {
+              "tree_sha256": {"type": "string"},
+              "state": {"enum": ["dirty", "generated"]}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"kind": {"const": "unknown"}}, "required": ["kind"]},
+          "then": {
+            "properties": {
+              "state": {"const": "unknown"},
+              "commit_sha": {"type": "null"},
+              "tree_sha256": {"type": "null"},
+              "base_commit_sha": {"type": "null"}
+            }
+          }
+        }
+      ]
+    }
+  }
+}

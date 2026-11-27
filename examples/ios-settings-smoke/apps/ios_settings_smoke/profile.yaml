@@ -1,0 +1,18 @@
+schema_version: v1
+app: ios_settings_smoke
+product_key: ios_settings_smoke
+bundle_id: com.apple.Preferences
+display_name: iOS Settings Smoke
+env: verification
+lifecycle: active
+reset: relaunch
+capabilities:
+  api_capture:
+    enabled: false
+    ready_markers:
+      - Airplane Mode
+      - 飞行模式
+      - Wi-Fi
+      - 无线局域网
+      - Bluetooth
+      - 蓝牙

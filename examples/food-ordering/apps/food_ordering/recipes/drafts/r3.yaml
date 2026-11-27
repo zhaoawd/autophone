@@ -1,0 +1,8 @@
+id: R3
+steps:
+  - action: tap_ax
+    symbol: ctrl.home.preferences
+    label: 打开饮食偏好页
+  - action: assert_present
+    queries: ["饮食偏好", "保存偏好"]
+    wait_s: 3

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>需求序列 · autophone</title>
+<link rel="icon" href="data:,">
+<!--
+  需求序列（执行方案 §6.3 最小版本）。
+  · 独立静态入口：不进 dashboard 的 pane 体系，也不动交付闭环页的列表与选择逻辑。
+  · 按显式序列 ID 读取（?sequence=<id>），不依赖「最近 60 条」列表。
+  · 所有数字来自 /api/requirements/sequences/<id> 的只读投影；页面不做任何二次计算，
+    投影说不可核对就显示「不可核对」，不显示 0。
+-->
+<link rel="stylesheet" href="/static/sequence.css">
+</head>
+<body>
+<header class="seq-top">
+  <div>
+    <a class="seq-back" href="/#delivery">← 交付闭环</a>
+    <h1 id="seqTitle">需求序列</h1>
+    <p id="seqSub" class="seq-sub">按序列 ID 读取本地序列描述与账本事实</p>
+  </div>
+  <form id="seqForm" class="seq-form">
+    <label for="seqInput">序列 ID</label>
+    <input id="seqInput" name="sequence" autocomplete="off" placeholder="例如 r0-r4-20260914">
+    <button type="submit">读取</button>
+  </form>
+</header>
+<main id="seqMain" class="seq-main"><p class="seq-note">读取中…</p></main>
+<script src="/static/sequence.js"></script>
+</body>
+</html>

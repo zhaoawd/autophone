@@ -1,0 +1,256 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/app-symbols.v1.json",
+  "title": "AppSymbols",
+  "description": "不可变制品符号绑定文件（app-symbols.v1）：仅声明与 Rig 无关的 artifact_identity 与控件绑定表 controls，原始文件字节 SHA-256 即 binding_sha256。关系级观测证据独立存于外部 claims 文件，严禁内嵌 target_fingerprint 或 relation_claims。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "app",
+    "artifact_identity",
+    "controls"
+  ],
+  "properties": {
+    "schema": {
+      "const": "autophone.app-symbols/1",
+      "description": "固定契约版本标识。"
+    },
+    "app": {
+      "type": "string",
+      "minLength": 1,
+      "description": "所属被测 App 标识符。"
+    },
+    "artifact_identity": {
+      "$ref": "#/$defs/artifact_identity",
+      "description": "与目标 Rig 无关的不可变制品内容身份头（ipa_build 或 rn_candidate）；严禁写入 target_fingerprint。"
+    },
+    "controls": {
+      "$ref": "#/$defs/controls",
+      "description": "逻辑符号 ID（symbol_id）到页面作用域、唯一命中有约束定位器与多副作用声明的映射表。"
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "normalized_region": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1
+      },
+      "description": "归一化屏幕区域 [nx0, ny0, nx1, ny1]，取值范围 [0.0, 1.0]。"
+    },
+    "artifact_identity": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/ipa_build_identity"
+        },
+        {
+          "$ref": "#/$defs/rn_candidate_identity"
+        }
+      ]
+    },
+    "ipa_build_identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "bundle_id",
+        "short_version",
+        "build_version",
+        "build_id",
+        "artifact_sha256"
+      ],
+      "properties": {
+        "kind": {
+          "const": "ipa_build"
+        },
+        "bundle_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "short_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "build_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "build_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "artifact_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "rn_candidate_identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "bundle_id",
+        "short_version",
+        "build_version",
+        "base_ipa_sha256",
+        "main_jsbundle_sha256",
+        "assets_tree_sha256"
+      ],
+      "properties": {
+        "kind": {
+          "const": "rn_candidate"
+        },
+        "bundle_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "short_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "build_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "base_ipa_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "main_jsbundle_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "assets_tree_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "controls": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+        "not": {
+          "enum": [
+            "relation_claims",
+            "target_fingerprint"
+          ]
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/control"
+      }
+    },
+    "control": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "scope",
+        "locator",
+        "effects"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "minLength": 1,
+          "description": "逻辑控件种类（如 button、tab、input、cell）。"
+        },
+        "scope": {
+          "$ref": "#/$defs/control_scope"
+        },
+        "locator": {
+          "$ref": "#/$defs/control_locator"
+        },
+        "effects": {
+          "$ref": "#/$defs/control_effects"
+        }
+      }
+    },
+    "control_scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "screen_id"
+      ],
+      "properties": {
+        "screen_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "对应 screens.yaml 中的页面锚点 ID。"
+        },
+        "region": {
+          "$ref": "#/$defs/normalized_region"
+        }
+      }
+    },
+    "control_locator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "identifier",
+        "enabled_only",
+        "require_unique"
+      ],
+      "properties": {
+        "kind": {
+          "const": "ax_identifier"
+        },
+        "identifier": {
+          "type": "string",
+          "minLength": 1
+        },
+        "role": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "description": "可选 AX 控件角色（如 button）；省略或 null 表示不按角色过滤。"
+        },
+        "enabled_only": {
+          "type": "boolean",
+          "default": true
+        },
+        "require_unique": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "control_effects": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "verbs",
+        "completeness"
+      ],
+      "properties": {
+        "verbs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "该控件触发的已知不可逆/对外副作用动词集合（空数组配合 exhaustive 表示确认只读）。"
+        },
+        "completeness": {
+          "enum": [
+            "exhaustive",
+            "lower_bound",
+            "unknown"
+          ],
+          "description": "副作用声明完备度：exhaustive 可进 active 回归；lower_bound/unknown 仅允许显式授权且隔离的 draft 试跑。"
+        }
+      }
+    }
+  }
+}

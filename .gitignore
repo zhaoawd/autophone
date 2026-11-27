@@ -1,0 +1,80 @@
+# Python & virtual environments
+__pycache__/
+*.pyc
+.venv/
+.venv-*/
+.ci-venv/
+.ci-venv-310/
+
+# Build & release outputs
+dist/
+/dist-ci/
+
+# OS & editor files
+.DS_Store
+.idea/
+~$*
+
+# Runtime locks, logs, caches & local state
+*.autophone.lock
+.worktrees/
+.verify_shots/
+/logs/
+/.cache/
+/.claude/scheduled_tasks.lock
+.autophone-transient/
+/runs/
+/rig-observed-state/
+/family-candidates/
+/case-import-batches/
+/apps/**/dispositions.json
+
+# Compiled host OCR & optional guest binaries
+/autophone/device/ocr/ocr_locate
+/autophone/device/ocr/make_fixture
+/tools/phase1/ocr/ocr_locate
+/tools/phase1/ocr/make_fixture
+/support/springboard-regions/autophone-springboard-regions
+/support/ax_dump.dylib
+/support/guest_ax_probe
+/support/guest_ax_probe.build.json
+/support/lock-state/lock_state
+/support/lock-state/lock_state.build.json
+/support/lock-state/.lock_state.*
+/tools/guest/
+
+# Local IPA artifacts & per-target installation receipts
+/packages/**/*.ipa
+/packages/*/installations/
+/packages/*/install-receipt.json
+/packages/*/manifest.v1.bak.json
+/artifacts/reverse/
+
+# Frida agent build outputs & local capture runs
+/tools/phase2/runs/
+/tools/phase4/
+/tools/phase5/runs/
+/autophone/observation/frida/agent/node_modules/
+/autophone/observation/frida/agent/_build/
+/autophone/observation/frida/runs/
+/autophone/_data/generated/
+
+# Node & Playwright E2E outputs
+**/node_modules
+/test-results/
+/playwright-report/
+
+# Local overlays & developer credentials (never commit)
+config/*.local.yaml
+config/location-points.local.yaml
+config/location-checkpoints.local.json
+config/location-policies.local.yaml
+config/location-audit.local.jsonl
+config/autophone.local.env
+
+# Host-bound local fixtures
+/tests/fixtures/screenshot-text-guard/color-ocr.json
+/tests/fixtures/screenshot-text-guard/loading-ocr.json
+/tests/fixtures/screenshot-text-guard/s02-before-observation-1.json
+/tests/fixtures/screenshot-text-guard/invalid-color-actual.png
+/tests/fixtures/screenshot-text-guard/s02-before-actual-full.png

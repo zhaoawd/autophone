@@ -1,0 +1,22 @@
+{
+  "schema_version": "ui-prototype-fixture/v1",
+  "state_id": "home.default.fixture-v1",
+  "data_sources": {
+    "spice_options": [
+      {
+        "value": "none",
+        "label": "不辣"
+      },
+      {
+        "value": "mild",
+        "label": "微辣"
+      }
+    ]
+  },
+  "values": {
+    "spice": "mild"
+  },
+  "view": {
+    "summary": "微辣"
+  }
+}

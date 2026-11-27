@@ -1,0 +1,509 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/runnability-report.v1.json",
+  "title": "RunnabilityReport",
+  "description": "可运行率基线只读出数结果：逐 Case 行与 eligible/started/passed/blocked 汇总，数字带 host、Rig、assignment_id 与 run_id。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "generated_at",
+    "source",
+    "source_detail",
+    "cohort",
+    "definitions",
+    "summary",
+    "by_machine",
+    "by_app",
+    "by_round",
+    "by_case",
+    "blocker_codes",
+    "missing_reasons",
+    "runs",
+    "rows",
+    "unexpected_cases"
+  ],
+  "$defs": {
+    "nullable_string": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "eligible",
+        "started",
+        "passed",
+        "failed",
+        "error",
+        "blocked",
+        "skipped",
+        "pending",
+        "missing",
+        "other"
+      ],
+      "properties": {
+        "eligible": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "started": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "passed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "error": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "blocked": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "skipped": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pending": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "missing": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "other": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "rates": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "started_of_eligible",
+        "passed_of_started",
+        "passed_of_eligible",
+        "blocked_of_eligible"
+      ],
+      "properties": {
+        "started_of_eligible": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "passed_of_started": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "passed_of_eligible": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "blocked_of_eligible": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      }
+    },
+    "breakdown": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "counts",
+          "rates"
+        ],
+        "properties": {
+          "counts": {
+            "$ref": "#/$defs/counts"
+          },
+          "rates": {
+            "$ref": "#/$defs/rates"
+          }
+        }
+      }
+    }
+  },
+  "properties": {
+    "schema_version": {
+      "const": "runnability-report/v1"
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "source": {
+      "enum": [
+        "pg",
+        "sqlite"
+      ]
+    },
+    "source_detail": {
+      "type": "object"
+    },
+    "cohort": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cohort_id",
+        "sha256",
+        "frozen_at",
+        "planned_runs"
+      ],
+      "properties": {
+        "cohort_id": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "frozen_at": {
+          "type": "string"
+        },
+        "planned_runs": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "definitions": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "counts",
+        "rates"
+      ],
+      "properties": {
+        "counts": {
+          "$ref": "#/$defs/counts"
+        },
+        "rates": {
+          "$ref": "#/$defs/rates"
+        }
+      }
+    },
+    "by_machine": {
+      "$ref": "#/$defs/breakdown"
+    },
+    "by_app": {
+      "$ref": "#/$defs/breakdown"
+    },
+    "by_round": {
+      "$ref": "#/$defs/breakdown"
+    },
+    "by_case": {
+      "$ref": "#/$defs/breakdown"
+    },
+    "blocker_codes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "category",
+          "blocker_scope",
+          "blocker_code",
+          "host_id",
+          "rig_id",
+          "count",
+          "case_ids",
+          "run_ids",
+          "assignment_ids"
+        ],
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "blocker_scope": {
+            "$ref": "#/$defs/nullable_string"
+          },
+          "blocker_code": {
+            "$ref": "#/$defs/nullable_string"
+          },
+          "host_id": {
+            "$ref": "#/$defs/nullable_string"
+          },
+          "rig_id": {
+            "$ref": "#/$defs/nullable_string"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "case_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "run_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "assignment_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "missing_reasons": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "absence",
+          "aborted_group",
+          "run_status",
+          "host_id",
+          "rig_id",
+          "count",
+          "case_ids",
+          "run_ids",
+          "assignment_ids"
+        ],
+        "properties": {
+          "absence": {
+            "enum": [
+              "run_not_found",
+              "no_result",
+              "group_aborted",
+              "not_in_result"
+            ]
+          },
+          "aborted_group": {
+            "$ref": "#/$defs/nullable_string"
+          },
+          "run_status": {
+            "$ref": "#/$defs/nullable_string"
+          },
+          "host_id": {
+            "$ref": "#/$defs/nullable_string"
+          },
+          "rig_id": {
+            "$ref": "#/$defs/nullable_string"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "case_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "run_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "assignment_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "runs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "app",
+          "round",
+          "run_id",
+          "planned_rig",
+          "found",
+          "has_result",
+          "assignment_id",
+          "host_id",
+          "rig_id",
+          "run_status",
+          "notes"
+        ],
+        "properties": {
+          "app": {
+            "type": "string"
+          },
+          "round": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "run_id": {
+            "type": "string"
+          },
+          "planned_rig": {
+            "type": "string"
+          },
+          "found": {
+            "type": "boolean"
+          },
+          "has_result": {
+            "type": "boolean"
+          },
+          "assignment_id": {
+            "$ref": "#/$defs/nullable_string"
+          },
+          "host_id": {
+            "$ref": "#/$defs/nullable_string"
+          },
+          "rig_id": {
+            "$ref": "#/$defs/nullable_string"
+          },
+          "run_status": {
+            "$ref": "#/$defs/nullable_string"
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "app",
+          "round",
+          "case_id",
+          "host_id",
+          "rig_id",
+          "planned_rig",
+          "assignment_id",
+          "run_id",
+          "run_status",
+          "status",
+          "category",
+          "blocker_scope",
+          "blocker_code",
+          "absence",
+          "aborted_group"
+        ],
+        "properties": {
+          "app": {
+            "type": "string"
+          },
+          "round": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "case_id": {
+            "type": "string"
+          },
+          "host_id": {
+            "$ref": "#/$defs/nullable_string"
+          },
+          "rig_id": {
+            "$ref": "#/$defs/nullable_string"
+          },
+          "planned_rig": {
+            "type": "string"
+          },
+          "assignment_id": {
+            "$ref": "#/$defs/nullable_string"
+          },
+          "run_id": {
+            "type": "string"
+          },
+          "run_status": {
+            "$ref": "#/$defs/nullable_string"
+          },
+          "status": {
+            "$ref": "#/$defs/nullable_string"
+          },
+          "category": {
+            "enum": [
+              "started",
+              "blocked",
+              "skipped",
+              "pending",
+              "missing",
+              "other"
+            ]
+          },
+          "blocker_scope": {
+            "$ref": "#/$defs/nullable_string"
+          },
+          "blocker_code": {
+            "$ref": "#/$defs/nullable_string"
+          },
+          "absence": {
+            "enum": [
+              "run_not_found",
+              "no_result",
+              "group_aborted",
+              "not_in_result",
+              null
+            ]
+          },
+          "aborted_group": {
+            "$ref": "#/$defs/nullable_string"
+          }
+        }
+      }
+    },
+    "unexpected_cases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "run_id",
+          "case_id",
+          "status"
+        ],
+        "properties": {
+          "run_id": {
+            "type": "string"
+          },
+          "case_id": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/$defs/nullable_string"
+          }
+        }
+      }
+    }
+  }
+}

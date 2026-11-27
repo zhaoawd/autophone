@@ -1,0 +1,435 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/operation.v1.json",
+  "title": "OperationRegistry",
+  "description": "操作库（RPA recipe）注册表。一个操作 = 目标导向、可参数化、可复用的确定性步骤序列，成功 = 把事做成了。刻意不含 expects——断言属于用例（用例 = 操作 + 断言 overlay）；断言逻辑需要封装控制流（轮询、阻断分类）时，可写成声明 case_assertion: true 的断言型 Operation，供 Case Recipe 作为断言步引用。与用例库共享 asset_store 生命周期核心（stable key / revision / status）。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "meta",
+    "operations"
+  ],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "schema_version",
+        "app",
+        "next_seq"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "app": {
+          "type": "string",
+          "minLength": 1,
+          "description": "所属被测 App 目录名"
+        },
+        "title": {
+          "type": "string"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "next_seq": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "下一个分配的 id 序号（OP{next_seq}）"
+        }
+      }
+    },
+    "operations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/operation"
+      }
+    }
+  },
+  "$defs": {
+    "operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "一个操作 recipe。无 expects——断言不在此层。",
+      "required": [
+        "id",
+        "status",
+        "revision",
+        "name",
+        "summary",
+        "steps",
+        "provenance"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^OP[0-9]+$",
+          "description": "稳定 key，由 asset_store 从 meta.next_seq 分配"
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "active",
+            "deprecated",
+            "archived"
+          ],
+          "description": "生命周期态；收录走 draft→人审→active"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "内容字段变更自增；纯 status 变更不动"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "稳定语义名（snake_case），用例/其他操作引用用"
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "display_name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "面向业务方（运营/测试）的中文名，Web 面板优先显示；缺省时面板回退 summary→name。业务名的唯一真源在此，前端不得再维护 name→中文 的硬编码字典"
+        },
+        "display_summary": {
+          "type": "string",
+          "minLength": 1,
+          "description": "面向业务方的一句话说明（这个操作做什么、用来干嘛）；缺省时面板回退 summary（summary 可含实现细节）"
+        },
+        "params": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/param"
+          },
+          "description": "入参契约，声明式"
+        },
+        "steps": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/step"
+          },
+          "description": "确定性步骤；冻结后可脱 AI 重放。两种形态并存：① 人读 prose 字符串（distilled/legacy 含控制流的手写执行器之文档）；② typed IR step——{action:<verb>,…} 或 {operation:<name>,args:{…}}，可被 dispatcher（recipe.validate_recipe）静态校验+重放的线性操作（AI 起草默认产这种）。控制流仍属手写执行器，绝不下沉 IR（§10.10）"
+        },
+        "navigation": {
+          "$ref": "#/$defs/navigation"
+        },
+        "screen_starts_with": {
+          "type": "string",
+          "minLength": 1,
+          "description": "S3 屏骨架 sidecar：回放起点应匹配的 screen id；不进入 step dict、不参与 validate_recipe"
+        },
+        "screen_expectations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "S3/S4 屏骨架 sidecar：step_index(0-based) -> 执行该 step 后预期 screen id；不进入 step dict"
+        },
+        "provenance": {
+          "$ref": "#/$defs/provenance"
+        },
+        "case_assertion": {
+          "type": "boolean",
+          "description": "true 声明本操作是 Case Assertion（断言型 Operation，）：执行器只读观测并在后态不符时以 assertion_failed 失败，可作为 Case Recipe 的断言步。由操作库声明、由检查读取，不按名字前缀推断；缺省或 false 视为非断言，不改变存量行为。与 witness 不同：witness 证明操作把事做成，case_assertion 证明用例预期成立"
+        },
+        "witness": {
+          "$ref": "#/$defs/witness"
+        },
+        "run_confirm": {
+          "$ref": "#/$defs/run_confirm"
+        },
+        "deprecate_reason": {
+          "type": "string"
+        }
+      }
+    },
+    "navigation": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "页面影响图谱的导航元数据：把这条操作声明成 Operation Graph 的一条有向边，供 route planner 组最短安全路径。纯声明层——steps 仍是执行真源，本段不参与执行与 validate_recipe。缺省=该操作不作为导航边参与自动选路。",
+      "properties": {
+        "from": {
+          "type": "string",
+          "minLength": 1,
+          "description": "起点 screen_id；缺省=任意起点（只能作为路径首步）"
+        },
+        "to": {
+          "type": "string",
+          "minLength": 1,
+          "description": "终点 screen_id"
+        },
+        "target_variant": {
+          "type": "object",
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean",
+              "null"
+            ]
+          },
+          "description": "到达后成立的归一化 variant 投影，如 {fulfillment_mode: pickup}"
+        },
+        "requires": {
+          "type": "object",
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean",
+              "null"
+            ]
+          },
+          "description": "前置消费上下文，如 {login_state: logged_in, store_selected: true}；不满足即该边不可用"
+        },
+        "effects": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "会改变状态的 effect verb（cart_mutation/address_mutation/place_order/payment/cancel_order/claim_coupon/membership_purchase 等）。非空 → 必须过 Effect Admission 才允许自动执行"
+        },
+        "reset": {
+          "enum": [
+            "ui_home",
+            "relaunch",
+            "none"
+          ]
+        },
+        "safety": {
+          "enum": [
+            "read_only",
+            "mutating"
+          ],
+          "description": "缺省按 effects 推断：effects 非空即 mutating。只有 read_only 的边参与无人值守探索"
+        }
+      }
+    },
+    "run_confirm": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "运行前确认门：声明后，所有 Web operation 提交路径（操作卡、快捷工具、无参数运行、历史 run 重跑）都在提交前弹同一层确认（有真副作用 / Prod 写的操作声明它）。纯呈现层元数据——不进 operation-result，不参与执行/校验/转正。确认弹层正文会自动追加本次生效入参摘要。",
+      "required": [
+        "title"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "description": "确认弹层标题"
+        },
+        "body": {
+          "type": "string",
+          "description": "确认弹层正文前缀（副作用边界说明）；其后自动追加本次入参摘要"
+        },
+        "verb": {
+          "type": "string",
+          "description": "确认按钮文案，缺省「运行」"
+        },
+        "danger": {
+          "type": "boolean",
+          "description": "true 时确认按钮用红色危险样式"
+        }
+      }
+    },
+    "witness": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "可观测后置条件 witness（ADR-0001）：操作达成目标态的正向证据，区别于用例断言——witness 只证 fixture 把事做成（如负路登录『确实被拒、仍在登录页』），不证用例期望。声明式，把原先埋在执行器里的 stage 判定提到契约层。可选：仅当『用例期望 == 操作成功条件』的操作（如 login_negative）才声明。",
+      "required": [
+        "kind",
+        "expect_stage"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "ocr_markers",
+            "ax_count"
+          ],
+          "description": "witness 观测方式；ocr_markers=OCR 标记集；ax_count=AX 节点计数与期望值比较"
+        },
+        "expect_stage": {
+          "type": "string",
+          "minLength": 1,
+          "description": "操作达成目标态时 witness 应报告的 stage（该操作『成功』的正向终态，如 login_negative 的 login_rejected）"
+        },
+        "markers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "证明达成态的正向 OCR 标记集（任一命中即认达成）"
+        },
+        "negative_control": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "区分力闸（discrimination gate）的负控声明：把哪个 param flip 成什么、witness 必须翻成的『预测对偶 stage』。供闸门读取——让 flip→任何兜底 fail-closed 不再被当作有牙，必须翻成预测对偶才算证明区分力。",
+          "required": [
+            "flip_arg",
+            "flip_to",
+            "expect_stage"
+          ],
+          "properties": {
+            "flip_arg": {
+              "type": "string",
+              "minLength": 1,
+              "description": "被 flip 的 param 名"
+            },
+            "flip_to": {
+              "description": "flip 成的值（应产生相反结果的输入）"
+            },
+            "expect_stage": {
+              "type": "string",
+              "minLength": 1,
+              "description": "flip 后 witness 必须翻成的预测对偶 stage（如 unexpectedly_logged_in）"
+            }
+          }
+        }
+      }
+    },
+    "step": {
+      "description": "一个步骤：prose 字符串 | typed IR action step {action,…} | typed IR operation step {operation,args}。三选一（oneOf）；action 与 operation 互斥，operation step 是闭集（只许 operation+args）。语义校验（参数名==kwarg、值类型、operation 已注册）由 recipe.validate_recipe 在起草期做，schema 只钉形态。",
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "object",
+          "required": [
+            "action"
+          ],
+          "not": {
+            "required": [
+              "operation"
+            ]
+          },
+          "properties": {
+            "action": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "operation"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "operation": {
+              "type": "string",
+              "minLength": 1
+            },
+            "args": {
+              "type": "object"
+            }
+          }
+        }
+      ]
+    },
+    "param": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "enum": [
+            "string",
+            "int",
+            "float",
+            "bool",
+            "enum",
+            "file"
+          ]
+        },
+        "values": {
+          "type": "array",
+          "description": "type=enum 时的取值域"
+        },
+        "default": {},
+        "required": {
+          "type": "boolean"
+        },
+        "multiline": {
+          "type": "boolean",
+          "description": "string 参数在运行弹层中用多行输入；值仍是普通字符串"
+        },
+        "token_list": {
+          "type": "boolean",
+          "description": "multiline string 参数按 token 列表解析（逗号 / 中文逗号 / 分号 / 空白 / 换行分隔，去重保序，仅字母数字 _-）；运行弹层据此实时预览识别到的条目、去重数与非法项，值仍是原始字符串"
+        },
+        "max_items": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "token_list 单次条目上限；运行弹层预览超限即警示"
+        },
+        "desc": {
+          "type": "string"
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "收录来源，回答“这个操作从哪来”——审计与复核用",
+      "required": [
+        "source"
+      ],
+      "properties": {
+        "source": {
+          "enum": [
+            "distilled",
+            "conversation",
+            "excel",
+            "verification",
+            "observed",
+            "live_discovery"
+          ],
+          "description": "distilled=从存量代码提炼；conversation=对话轨迹冻结；excel/verification 同用例库收录源；observed/live_discovery=活设备实测或发现记录"
+        },
+        "from": {
+          "type": "string",
+          "description": "来源文件/会话标识"
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        },
+        "step_events": {
+          "type": "array",
+          "items": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "description": "录制来源专用：steps[i] 对应的录制 trace 事件下标（合并步取最后一个，合成/手加步为 null），长度必须等于 steps。回放据此把录制时的人手停顿对回 steps（倍速回放的「原速」真源）；缺省或长度不符 → 回放退化成均匀节奏（fail-open）。不参与执行与校验"
+        },
+        "detached": {
+          "type": "boolean",
+          "description": "来源录制已被删除：证据链（trace/截图/节奏）不再可达，重提升与逐步复核都不可能。删录制时置位，供面板标注"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,298 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "run-world-identity.v0.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "platform_source_ref",
+    "vphone_source_ref",
+    "deployed_runtime_ref",
+    "vm_instance_ref",
+    "subject_build_ref",
+    "schema_version",
+    "run_id",
+    "observed_at",
+    "assignment_binding",
+    "runtime_capabilities",
+    "time_context",
+    "evidence_cutoff",
+    "record_sha256"
+  ],
+  "properties": {
+    "platform_source_ref": {
+      "type": "object",
+      "required": [
+        "state"
+      ],
+      "properties": {
+        "state": {
+          "enum": [
+            "observed",
+            "partial",
+            "unprobed",
+            "mismatch"
+          ]
+        }
+      }
+    },
+    "vphone_source_ref": {
+      "type": "object",
+      "required": [
+        "state"
+      ],
+      "properties": {
+        "state": {
+          "enum": [
+            "observed",
+            "partial",
+            "unprobed",
+            "mismatch"
+          ]
+        }
+      }
+    },
+    "deployed_runtime_ref": {
+      "type": "object",
+      "required": [
+        "state"
+      ],
+      "properties": {
+        "state": {
+          "enum": [
+            "observed",
+            "partial",
+            "unprobed",
+            "mismatch"
+          ]
+        }
+      }
+    },
+    "vm_instance_ref": {
+      "type": "object",
+      "required": [
+        "state"
+      ],
+      "properties": {
+        "state": {
+          "enum": [
+            "observed",
+            "partial",
+            "unprobed",
+            "mismatch"
+          ]
+        }
+      }
+    },
+    "subject_build_ref": {
+      "type": "object",
+      "required": [
+        "state"
+      ],
+      "properties": {
+        "state": {
+          "enum": [
+            "observed",
+            "partial",
+            "unprobed",
+            "mismatch"
+          ]
+        },
+        "info_plist": {
+          "type": "object",
+          "description": "设备 Info.plist 与比较基准 IPA 内 Info.plist 的字节 sha256。不改变 state；第二步起 source_revision.kind=unknown 的 Build 结合 info_plist_basis 判定 comparison_granularity=info_plist（见 run_submission.compare_installed_build）；旧记录没有该字段",
+          "additionalProperties": false,
+          "required": [
+            "comparison",
+            "device_sha256",
+            "expected_sha256",
+            "basis_build_id",
+            "reason"
+          ],
+          "properties": {
+            "comparison": {
+              "enum": [
+                "equal",
+                "different",
+                "not_compared"
+              ]
+            },
+            "device_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "expected_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "basis_build_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "reason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "info_plist_basis": {
+          "type": "object",
+          "description": "第二步：比较基准 Build 的宿主侧 Info.plist 基准（本机复算 IPA sha256 后只读取得，不写回 Build Record）。uniqueness 只对 source_revision.kind=unknown 计算：unique 为 Package Store 内无其他 Build 的 Info.plist 字节相同，ambiguous 为有，unverified 为有其他 Build 的 IPA 无法复算且不能由登记的 bundle_id/short_version 排除，not_evaluated 为未计算（其他 kind 或基准不可用）。reason 非 null 表示基准不可用。旧记录没有该字段",
+          "additionalProperties": false,
+          "required": [
+            "build_id",
+            "source_revision_kind",
+            "info_plist_sha256",
+            "ipa_short_version",
+            "ipa_build_version",
+            "uniqueness",
+            "same_info_plist_build_ids",
+            "unverified_build_ids",
+            "reason"
+          ],
+          "properties": {
+            "build_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "source_revision_kind": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "info_plist_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "ipa_short_version": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "ipa_build_version": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "uniqueness": {
+              "enum": [
+                "unique",
+                "ambiguous",
+                "unverified",
+                "not_evaluated"
+              ]
+            },
+            "same_info_plist_build_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "unverified_build_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "reason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "schema_version": {
+      "const": "run-world-identity/v0"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "observed_at": {
+      "type": "string"
+    },
+    "assignment_binding": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "runtime_capabilities": {
+      "type": "object"
+    },
+    "time_context": {
+      "type": "object"
+    },
+    "locale_context": {
+      "description": "设备语言设置的只读观测；2026-10-08 起新增，旧记录没有该字段。",
+      "type": "object",
+      "required": [
+        "state",
+        "preferred_language",
+        "current_locale"
+      ],
+      "properties": {
+        "state": {
+          "enum": [
+            "observed",
+            "partial",
+            "unprobed"
+          ]
+        },
+        "preferred_language": {
+          "type": "string",
+          "minLength": 1
+        },
+        "preferred_languages": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "current_locale": {
+          "type": "string",
+          "minLength": 1
+        },
+        "current_locale_scope": {
+          "const": "device"
+        },
+        "observation_source": {
+          "type": "string"
+        },
+        "source_path": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        }
+      }
+    },
+    "evidence_cutoff": {
+      "type": "object"
+    },
+    "record_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

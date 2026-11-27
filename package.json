@@ -1,0 +1,10 @@
+{
+  "name": "autophone-dashboard-e2e",
+  "private": true,
+  "scripts": {
+    "test:dashboard-e2e": "node scripts/dashboard_e2e_run.mjs mock"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.61.1"
+  }
+}

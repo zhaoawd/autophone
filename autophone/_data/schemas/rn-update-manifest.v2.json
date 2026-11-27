@@ -1,0 +1,164 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/rn-update-manifest.v2.json",
+  "title": "RnUpdateManifest",
+  "description": "RN Update Manifest v2。projection_version 显式记录 Native Runtime ID 的投影规则版本。宿主校验器支持显式 v2；签名与 assets tree 摘要算法由产品端口提供，Expo 实现见 apps.food_ordering_rnu。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "projection_version",
+    "update_id",
+    "required_native_runtime_id",
+    "platform",
+    "source_revision",
+    "source_tree_sha256",
+    "entry_point",
+    "js_engine",
+    "bundle",
+    "assets",
+    "signature"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "rn-update/v2"
+    },
+    "update_id": {
+      "type": "string",
+      "pattern": "^upd-[0-9A-Za-z._-]{1,120}$"
+    },
+    "required_native_runtime_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "platform": {
+      "const": "ios"
+    },
+    "source_revision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "commit_sha"
+      ],
+      "properties": {
+        "kind": {
+          "const": "git_commit"
+        },
+        "commit_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        }
+      }
+    },
+    "source_tree_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "entry_point": {
+      "type": "string",
+      "minLength": 1
+    },
+    "js_engine": {
+      "enum": [
+        "jsc",
+        "hermes"
+      ]
+    },
+    "bundle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "file",
+        "sha256",
+        "size_bytes"
+      ],
+      "properties": {
+        "file": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "description": "Update 根内相对 POSIX 路径；宿主校验另拒绝 ..、绝对路径与符号链接"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "assets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tree_sha256",
+        "files"
+      ],
+      "properties": {
+        "tree_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "sha256",
+              "size_bytes"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512,
+                "description": "Update 根内相对 POSIX 路径；宿主校验另拒绝 ..、绝对路径与符号链接"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "size_bytes": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    "signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key_id",
+        "algorithm",
+        "value"
+      ],
+      "properties": {
+        "key_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "algorithm": {
+          "type": "string",
+          "minLength": 1
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "projection_version": {
+      "type": "string",
+      "pattern": "^rn-native-projection/[1-9][0-9]*$",
+      "description": "结构校验接受正整数版本；消费方须先核对与 Native Runtime Record 的版本一致并受支持，再比较 ID。"
+    }
+  }
+}

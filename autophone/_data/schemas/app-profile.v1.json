@@ -1,0 +1,311 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/app-profile.v1.json",
+  "title": "AppProfile",
+  "description": "接入一个被测 App 的最小契约。capabilities 声明式，缺什么降级什么。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "app", "bundle_id", "display_name"],
+  "properties": {
+    "schema_version": { "const": "v1" },
+    "app": { "type": "string", "minLength": 1, "description": "目录名 / 标识符" },
+    "product_key": { "type": "string", "minLength": 1, "description": "同一产品跨环境 App Profile 的稳定分组键；缺省时等同 app" },
+    "bundle_id": { "type": "string", "minLength": 1 },
+    "display_name": { "type": "string", "minLength": 1 },
+    "env": { "type": "string" },
+    "lifecycle": { "enum": ["active", "archived"], "description": "App Profile 自身生命周期；缺省 active。archived 仅退出默认工作区，不物理删除档案、资产或历史 Run" },
+    "build_label": { "type": "string", "description": "当前在测 build 标识（ADR-0001 区分力闸 build-stamped 失效基准）：区分力证据的 build_label 与此不符即判 stale。缺省=不做 staleness 比对" },
+    "artifact_store": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "store_id", "relative_root"],
+      "anyOf": [
+        {"required": ["project_root"]},
+        {"required": ["project_root_env"]}
+      ],
+      "properties": {
+        "kind": {"const": "project_local"},
+        "store_id": {"type": "string", "minLength": 1},
+        "project_root": {"type": "string", "minLength": 1},
+        "project_root_env": {"type": "string", "minLength": 1},
+        "relative_root": {"type": "string", "minLength": 1}
+      },
+      "description": "产品项目持有的不可变 IPA 字节存储；Package Store 仍持有 Build Record、Candidate 和安装回执。"
+    },
+    "requirement_inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "relative_root"],
+      "anyOf": [
+        {"required": ["project_root"]},
+        {"required": ["project_root_env"]}
+      ],
+      "properties": {
+        "kind": {"const": "project_local"},
+        "project_root": {"type": "string", "minLength": 1},
+        "project_root_env": {"type": "string", "minLength": 1},
+        "relative_root": {"type": "string", "minLength": 1}
+      },
+      "description": "交付需求输入（需求原文 + 冻结设计包）在产品项目里的真源目录，一轮一个子目录。没有这一段就表示该 app 不把需求输入放进产品项目。"
+    },
+    "require_discrimination": { "type": "boolean", "description": "转正是否默认强制区分力闸（ADR-0001）。缺省 true：可执行用例（automation=ui_ready）draft→active 须附当前 build 的有牙证据。设 false 整 app 退回旧行为（rollout 逃生阀）" },
+    "allowed_effects": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "A3 effect policy：该 app 显式允许触发的不可逆/对外 effect verb；缺省空=全拒。迁移第一阶段仅 audit/report-only，enforce 后由 validate_recipe_for_app/运行时兜底使用。"
+    },
+    "trial_data_isolation": {
+      "enum": ["unisolated", "isolated"],
+      "default": "unisolated",
+      "description": "草稿试跑数据隔离声明（D7）：缺省 unisolated。仅当显式声明 isolated 且 CLI 同时传入 --trial-draft-recipes --confirm-trial-effects 时，才允许 draft 试跑执行 lower_bound / unknown 副作用步骤。"
+    },
+    "store_catalog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["brand"],
+      "description": "App 使用的门店基础数据品牌。声明后看板标头显示门店选择器，定位与工具页共享同一门店上下文。",
+      "properties": {
+        "brand": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$", "description": "门店目录品牌键；可用取值由环境变量 AUTOPHONE_STORE_BRANDS 配置。" },
+        "default_store_code": { "type": "string", "minLength": 1 }
+      }
+    },
+    "location": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["auto_injection_allowed", "background_upload_risk", "core_location_spawn"],
+      "description": "App 进程内定位目标白名单。声明 CoreLocation spawn target；缺省表示该 App 不允许平台自动注入。",
+      "properties": {
+        "auto_injection_allowed": { "type": "boolean", "description": "必须由 App Profile 显式启用；缺省或 false 均拒绝创建 App 定位目标。" },
+        "background_upload_risk": { "type": "boolean", "description": "该 App 可能把注入位置上报到后端；控制面据此展示风险确认。" },
+        "core_location_spawn": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["allowed", "coordinate_system", "coordinate_evidence"],
+          "description": "仅供显式 Operation 使用的首读前 CoreLocation spawn-gate 声明。",
+          "properties": {
+            "allowed": { "type": "boolean" },
+            "coordinate_system": { "enum": ["gcj02", "wgs84"] },
+            "coordinate_evidence": { "enum": ["pending_live_validation", "live_validated"] }
+          }
+        }
+      }
+    },
+    "requirements": {
+      "type": "object",
+      "additionalProperties": { "enum": ["required", "advisory", "disabled"] },
+      "description": "可选的 app 级能力底线；与 recipe requirements 合并时只能收紧，不能削弱 vm_uds/app_ui/location_injection 等安全能力。"
+    },
+    "im": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "B1 IM 域硬前提（红线『错误接收人率=0』）：send_* 类动作执行前必须断出当前会话稳定 ID 且 ∈ allowed_conversations。这是 allowed_effects（管『能不能发』）之上的第二道闸（管『能发给谁』）。缺省=零白名单=一切发送 abort。",
+      "properties": {
+        "allowed_conversations": {
+          "type": "array",
+          "description": "允许发送的测试会话稳定 ID 白名单（专用测试群，成员只有测试账号）。发送前断言当前会话 chat_id ∈ 此集合，否则 fail-closed abort。",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["chat_id"],
+            "properties": {
+              "chat_id": { "type": "string", "minLength": 1, "description": "稳定会话 ID（IM 平台的 conversation/chat id），唯一判据。" },
+              "display_name": { "type": "string", "description": "仅作弱信号核对，不作判据。" }
+            }
+          }
+        }
+      }
+    },
+    "login": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["method"],
+      "properties": {
+        "method": { "enum": ["script", "manual"] }
+      }
+    },
+    "reset": {
+      "enum": ["ui_home", "relaunch", "none"],
+      "description": "每用例复位策略"
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "声明哪些观测面/能力可用；缺失即该面降级为 not_configured",
+      "properties": {
+        "fixtures": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "如 order / duty"
+        },
+        "api_capture": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "mode": {
+              "enum": ["spawn", "attach"],
+              "description": "抓取启动模型：spawn=Frida spawn-gate（默认）；attach=uiopen 普通启动后 attach 前台 pid（spawn-gate 在该 guest 上黑屏/抓错进程时用）。"
+            },
+            "early_lifecycle": { "type": "boolean", "description": "在 spawn resume 前显式安装命名 Foundation 被动生命周期 hook；不枚举 delegate 类，覆盖回执缺失时拒绝来源证明。" },
+            "domains": { "type": "array", "items": { "type": "string" } },
+            "redact": { "type": "array", "items": { "type": "string" } },
+            "ready_markers": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 },
+              "description": "Frida spawn-gate 后允许 runner 开始前必须先 OCR 命中的可用界面标记。缺省为空时退化为任意 OCR 文本。"
+            },
+            "ready_timeout_s": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Frida spawn-gate 后等待 ready_markers/可用 OCR 文本的最长秒数。"
+            }
+          }
+        },
+        "launch": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "启动兜底配置。仅在 bundle-id 启动通道失效时使用，避免通用启动器猜测主屏图标位置。",
+          "properties": {
+            "springboard_icon_preview": {
+              "type": "array",
+              "prefixItems": [
+                { "type": "integer", "minimum": 0 },
+                { "type": "integer", "minimum": 0 }
+              ],
+              "items": false,
+              "minItems": 2,
+              "maxItems": 2,
+              "description": "主屏图标中心点，preview 430x932 坐标。用于 uiopen --bundleid/LS 注册失效但图标仍可启动的 VM 状态。"
+            }
+          }
+        },
+        "telemetry": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "backend_query": { "type": "boolean" },
+            "provider": {
+              "enum": ["data_trace"],
+              "description": "用户行为数据的后端查询实现。"
+            },
+            "endpoint": {
+              "enum": ["dev", "prod"],
+              "description": "只选择 host 环境变量中的 endpoint，不在 profile 保存真实 URL。"
+            },
+            "platform_id": { "type": "integer", "minimum": 1 },
+            "brand_id": { "type": "integer", "minimum": 1 },
+            "channel": { "type": "string", "minLength": 1 },
+            "sdk_bundle_id": {
+              "type": ["string", "null"],
+              "description": "dataTrace SDK bundle；M0 未确认时必须为 null，不能回退 App CFBundleIdentifier。"
+            },
+            "identity": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["field", "sources"],
+              "properties": {
+                "field": { "enum": ["phone_no", "user_code", "device_id", "session_id", "sid"] },
+                "sources": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": { "type": "string", "minLength": 1 },
+                  "description": "按顺序解析身份：env:NAME、fixture:path，或显式 API JSON body 路径 api:request.path / api:response.path；API 多值冲突时 fail-closed。"
+                }
+              }
+            },
+            "query_padding_s": { "type": "number", "minimum": 0 },
+            "attribution_clock_skew_s": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 30,
+              "description": "仅在 case 开始前容忍的事件时钟偏差；不会延长 case 结束边界。"
+            },
+            "poll_delays_s": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "number", "minimum": 0 }
+            },
+            "record_replay_delay_s": {
+              "type": "number",
+              "minimum": 0,
+              "description": "录制/回放结束后等待 dataTrace 入仓的单次查询延迟；默认 10 秒。"
+            },
+            "required_gate": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["column_set_version", "channel_verified", "identity_verified", "latency_calibrated"],
+              "description": "缺事件升级为产品 fail 前的外部事实校准门；任一未证实时保持 pending。",
+              "properties": {
+                "column_set_version": { "type": "string", "minLength": 1 },
+                "channel_verified": { "type": "boolean" },
+                "identity_verified": { "type": "boolean" },
+                "latency_calibrated": { "type": "boolean" }
+              }
+            },
+            "dict": { "type": "string", "description": "埋点字典相对路径，如 telemetry/dict.yaml" }
+          }
+        },
+        "ax": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "结构寻址（tap_ax）：按 AX 树 label/role/identifier 寻址（破 OCR 脆性）。缺省使用免 Frida 进程外 guest_axruntime 后端，亦可显式 opt-in frida_inproc 进程内探针。缺省关。",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "backend": {
+              "enum": ["frida_inproc", "guest_axruntime"],
+              "default": "guest_axruntime",
+              "description": "AX 观测后端（D8）：Run 启动期静态固定，严禁运行中途动态互切；缺省 guest_axruntime（免 Frida 进程外 AXRuntime 后端），frida_inproc 仍作为显式 opt-in 支持进程内/灰盒 AX 探针。"
+            }
+          }
+        }
+      }
+    },
+    "quick_tools": {
+      "type": "array",
+      "description": "操作库页顶部的快捷工具槽位。原先「订单快捷工具」卡按 app 名硬编码在前端，现改为声明式：每个槽位绑定一条在用 operation，presets 只是该 operation 的预置参数组合（不另起第二套执行协议）。未声明即不显示。",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["operation", "title", "presets"],
+        "properties": {
+          "operation": { "type": "string", "minLength": 1, "description": "绑定的 operation name；该操作不存在或非 active 时整卡不显示" },
+          "title": { "type": "string", "minLength": 1 },
+          "note": { "type": "string", "description": "副标题：说清这个快捷工具的真实副作用边界" },
+          "warn": { "type": "string", "description": "右上角警示徽章文案，如「共享环境写操作」" },
+          "advanced_label": { "type": "string", "description": "跳统一参数弹窗的链接文案，缺省「高级参数…」；空字符串则不显示" },
+          "footnote": { "type": "string" },
+          "presets": {
+            "type": "array",
+            "description": "可选的免填参数动作；参数必填型工具可为空数组，仅展示 advanced_label 入口",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["label", "args"],
+              "properties": {
+                "label": { "type": "string", "minLength": 1 },
+                "tone": { "enum": ["accent", "secondary"], "description": "accent = 每卡至多一个主动作；缺省 secondary" },
+                "args": { "type": "object", "description": "operation run 的参数覆盖，语义同统一参数弹窗" },
+                "run_label": { "type": "string", "description": "运行短标签，缺省用 label" },
+                "confirm": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["title"],
+                  "description": "声明后点击先弹确认层；有真副作用的 preset 必须声明",
+                  "properties": {
+                    "title": { "type": "string", "minLength": 1 },
+                    "body": { "type": "string" },
+                    "verb": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "cases_dir": { "type": "string" },
+    "scripts_dir": { "type": "string" },
+    "operations_dir": { "type": "string" },
+    "recipes_dir": { "type": "string" }
+  }
+}

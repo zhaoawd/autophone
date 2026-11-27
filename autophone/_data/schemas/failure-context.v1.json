@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/failure-context.v1.json",
+  "title": "FailureContext",
+  "description": "执行失败位置；不声明根因或资产修改结论。",
+  "type": "object",
+  "$defs": {
+    "failureStage": {
+      "enum": [
+        "not_recorded",
+        "rig_readiness",
+        "operation_execution",
+        "case_execution",
+        "assertion"
+      ]
+    },
+    "failedDefinition": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "unknown",
+                "conflicting"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "asset_type",
+            "asset_id",
+            "revision"
+          ],
+          "properties": {
+            "status": {
+              "const": "known"
+            },
+            "asset_type": {
+              "enum": [
+                "recipe",
+                "operation",
+                "case"
+              ]
+            },
+            "asset_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "shared": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+}

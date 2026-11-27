@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Questions & Discussions
+    url: https://github.com/zhaoawd/autophone/discussions
+    about: Ask questions, share tips, or discuss workflows and ideas with the community.
+  - name: Security Vulnerability Report
+    url: https://github.com/zhaoawd/autophone/security/advisories/new
+    about: Please report security vulnerabilities privately rather than opening a public issue.

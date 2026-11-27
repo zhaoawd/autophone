@@ -1,0 +1,26 @@
+meta:
+  title: Food Ordering Operations
+  app: food_ordering
+  schema_version: 1
+  total: 1
+  next_seq: 2
+operations:
+  - id: OP1
+    name: read_preference_profile
+    status: active
+    revision: 1
+    summary: 只读回读目标门店的饮食偏好配置实例
+    params:
+      - name: store_id
+        type: string
+        required: true
+        desc: "目标门店实例 ID（由 entity_binding {from_entity: id} 注入）"
+    navigation:
+      safety: read_only
+    provenance:
+      source: distilled
+      note: Stage 2 read-only post-action entity readback example operation
+    steps:
+      - action: assert_present
+        queries: ["饮食偏好", "保存偏好"]
+        wait_s: 0

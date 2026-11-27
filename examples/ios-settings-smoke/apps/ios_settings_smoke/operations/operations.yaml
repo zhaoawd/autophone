@@ -1,0 +1,24 @@
+meta:
+  schema_version: 1
+  app: ios_settings_smoke
+  title: iOS Settings Smoke Operations
+  total: 1
+  next_seq: 2
+operations:
+  - id: OP1
+    status: active
+    revision: 1
+    name: open_general
+    summary: 打开 iOS 系统设置并进入「通用 / General」页面
+    display_name: 进入系统设置通用页
+    display_summary: 在系统自带设置中定位并点击「通用」入口
+    steps:
+      - action: wait_text
+        query: General
+        timeout_s: 8
+      - action: tap_text
+        query: General
+        retries: 2
+    provenance:
+      source: distilled
+      note: Built-in IPA-free example operation targeting com.apple.Preferences

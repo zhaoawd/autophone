@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/run-submission.v1.json",
+  "title": "Immutable run submission context",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "app",
+    "created_at",
+    "registry_build_ref"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "v1"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "app": {
+      "type": "string",
+      "minLength": 1
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "registry_build_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "captured_at",
+        "default_slot",
+        "default_version",
+        "default_sha256",
+        "short_version",
+        "build_version",
+        "profile_build_label",
+        "capture_state",
+        "unknown_reason"
+      ],
+      "properties": {
+        "captured_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "default_slot": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "default_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "default_sha256": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "short_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "build_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "profile_build_label": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "capture_state": {
+          "enum": [
+            "captured",
+            "unknown"
+          ]
+        },
+        "unknown_reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "installed_build_ref": {
+      "oneOf": [
+        {
+          "$ref": "registry-build-ref.v1.json"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "提交时从当前 Target 安装回执冻结的已安装 Build 身份。与 registry_build_ref（Asset 默认选择快照）是两个不同的事实：前者说「装的是哪个 Build」，后者说「manifest 默认选哪个 slot」。旧 sidecar 可省略。"
+    },
+    "installed_build_verified": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "提交时安装回执的 verified 字段。false（--no-verify 安装）时 installed_build_ref 不作为构建身份比较基准；null 表示回执缺失或 sidecar 写于冻结该字段之前。"
+    },
+    "registry_candidate_ref": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "candidate-ref.v1.json"
+        }
+      ]
+    },
+    "candidate_build_ref": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "registry-build-ref.v1.json"
+        }
+      ]
+    }
+  }
+}

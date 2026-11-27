@@ -1,0 +1,6 @@
+# 新建上游 vphone 镜像默认英文界面（en_US）；中文系统界面可将 "General" 替换为 "通用"
+id: R1
+steps:
+  - action: assert_present
+    queries: ["General"]
+    wait_s: 3

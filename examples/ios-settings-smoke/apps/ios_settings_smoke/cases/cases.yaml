@@ -1,0 +1,36 @@
+meta:
+  title: iOS Settings Smoke (IPA-Free)
+  app: ios_settings_smoke
+  schema_version: 2
+  total: 2
+  next_seq: 3
+cases:
+  - id: R1
+    revision: 1
+    status: active
+    automation: ui_ready
+    case_type: 功能测试
+    test_point: 系统设置主入口可见（正向通过）
+    owner: example
+    module: 系统设置
+    item: 启动系统设置后页面显示「General / 通用」入口
+    login_precondition: any
+    steps:
+      - 打开系统自带设置应用（com.apple.Preferences）
+      - 校验主列表中显示「General」（中文界面可改为「通用」）入口
+    expects:
+      - 页面展示系统设置入口文案且断言通过
+  - id: R2
+    revision: 1
+    status: active
+    automation: ui_ready
+    case_type: 负向对照
+    test_point: 不存在文案触发确定性失败（负向对照）
+    owner: example
+    module: 系统设置
+    item: 系统设置页不应出现不存在的哨兵文案（用于验证失败证据与报告）
+    login_precondition: any
+    steps:
+      - 在系统设置页面断言不存在的哨兵标识 AUTOPHONE_NEGATIVE_SENTINEL_404
+    expects:
+      - 断言失败并产出包含截图与失败原因的 HTML 证据报告

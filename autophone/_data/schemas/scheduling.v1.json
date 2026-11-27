@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/scheduling.v1.json",
+  "title": "CaseSchedulingContract",
+  "description": "用例批调度的最小运行期契约。只包含 runner 真正消费的字段；AI/转换器的其余建议继续留在 raw.hints，不得影响执行。",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "shareable_prefix": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 },
+      "description": "setup 中已证明可跨相邻用例复用的 operation 名称前缀。"
+    },
+    "expect_coupled_operations": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 },
+      "description": "当前用例必须真跑、不得共享跳过的 operation；其流量被 API oracle 归因。"
+    },
+    "order_pool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": {
+        "mode": {
+          "enum": ["read_only", "advance"],
+          "description": "read_only=用后仍可复用；advance=用后按 produce readback 并以新态归档。"
+        },
+        "produce": {
+          "type": "string",
+          "minLength": 1,
+          "description": "advance 成功后必须经 readback 证明的订单生命周期目标态。"
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "mode": { "const": "advance" } }, "required": ["mode"] },
+          "then": { "required": ["produce"] },
+          "else": { "not": { "required": ["produce"] } }
+        }
+      ]
+    }
+  }
+}

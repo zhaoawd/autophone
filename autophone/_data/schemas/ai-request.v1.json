@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/ai-request.v1.json",
+  "title": "AiRequest",
+  "description": "调用本地 agent CLI（claude/codex）的统一入参契约（platform-ai-capability §2.1）。上层四个场景共用，provider 后端各自翻译成 CLI 命令。context_dirs 必须是 §5.2 ai-context 净化包，不是裸 run_dir。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "prompt"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "v1"
+    },
+    "prompt": {
+      "type": "string",
+      "minLength": 1,
+      "description": "主指令"
+    },
+    "system": {
+      "type": "string",
+      "description": "追加系统提示（claude --append-system-prompt）"
+    },
+    "context_dirs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "喂给 agent 读的目录 → --add-dir。必须是 §5.2 净化包，raw 产物经 allow_raw 显式放行才进包"
+    },
+    "images": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "附图路径（codex -i / claude 内容块）"
+    },
+    "json_schema": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "结构化输出契约（claude --json-schema / codex --output-schema）。非空时 AiResult.json 必须解析回填，解析不过 fail-closed"
+    },
+    "tools": {
+      "enum": [
+        "none",
+        "device",
+        "full"
+      ],
+      "default": "none",
+      "description": "能力面：none=纯推理只读；device=经 vphone_mcp 驱动真机（必须进 ScreenLock execute phase）；full=全开（受 §五 约束）"
+    },
+    "provider": {
+      "enum": [
+        "claude",
+        "codex",
+        "auto"
+      ],
+      "description": "覆写 AUTOPHONE_AI_PROVIDER；auto=首选缺失才 fallback。省略则用 env / 默认 codex"
+    },
+    "model": {
+      "type": "string",
+      "description": "claude --model / codex -m"
+    },
+    "timeout_s": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "default": 300,
+      "description": "超时 fail-closed（SIGKILL 进程组）"
+    },
+    "max_budget_usd": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "exclusiveMinimum": 0,
+      "description": "成本授权上限；未给 stop_budget_usd 时同时作为 claude --max-budget-usd；codex 无对应，仅 timeout 兜底"
+    },
+    "stop_budget_usd": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "exclusiveMinimum": 0,
+      "description": "可选：claude --max-budget-usd 的停止阈值；CLI 只在轮次之间检查，阈值可低于授权上限 max_budget_usd，调用后仍按授权上限判定"
+    },
+    "allow_raw": {
+      "type": "boolean",
+      "default": false,
+      "description": "危险开关：放行 redaction_status=raw 产物进 ai-context 包，放行即写 run evidence（§5.2）"
+    }
+  }
+}

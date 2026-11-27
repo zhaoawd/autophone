@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/field-binding.v1.json",
+  "title": "FieldBindingRegistry",
+  "description": "后端配置/数据字段 → 接口响应 JSONPath → ScreenVariant → ScreenRegion 的字段级关系登记表。人审资产：新增走 draft，转 active 要人审；confidence 决定影响分析里是否自动执行。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["meta", "bindings"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["schema_version", "app", "next_seq"],
+      "properties": {
+        "schema_version": { "const": 1 },
+        "app": { "type": "string", "minLength": 1 },
+        "title": { "type": "string" },
+        "total": { "type": "integer", "minimum": 0 },
+        "next_seq": { "type": "integer", "minimum": 1, "description": "下一个分配的 id 序号（FB{next_seq}）" }
+      }
+    },
+    "bindings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/binding" }
+    }
+  },
+  "$defs": {
+    "comparison_policy": {
+      "type": "object", "additionalProperties": false, "minProperties": 1,
+      "properties": {
+        "semantic_scope": { "const": "declared_target_regions" },
+        "source_selection": { "enum": ["terminal_cancelled_zero_bytes", "consistent_complete_response_set"] }
+      }
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "status", "revision", "source", "target", "relation", "confidence", "build"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^FB[0-9]+$" },
+        "status": { "enum": ["draft", "active", "deprecated", "archived"] },
+        "revision": { "type": "integer", "minimum": 1 },
+        "comparison_policy": { "$ref": "#/$defs/comparison_policy" },
+        "build": { "type": "string", "minLength": 1, "description": "标定该关系时的 app build；与当前 build 不符 → stale，禁止自动判断" },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "description": "后端侧的字段身份。真实 key 由后端 manifest 或抓包确认，不得凭空编造。",
+          "properties": {
+            "config_key": { "type": "string", "minLength": 1 },
+            "data_key": { "type": "string", "minLength": 1 },
+            "service": { "type": "string", "minLength": 1 },
+            "owner": { "type": "string" },
+            "note": { "type": "string" }
+          }
+        },
+        "endpoint": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["method", "host_alias", "path_template"],
+          "description": "标准化 endpoint identity：不得含真实门店/商品/账号/订单 ID",
+          "properties": {
+            "method": { "type": "string", "minLength": 1 },
+            "host_alias": { "type": "string", "minLength": 1 },
+            "path_template": { "type": "string", "minLength": 1 }
+          }
+        },
+        "response_path": { "type": "string", "minLength": 1, "description": "响应体 JSONPath，如 $.data.categories[*].items[*].soldOut" },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["screen_id"],
+          "properties": {
+            "screen_id": { "type": "string", "minLength": 1 },
+            "variant_selector": {
+              "type": "object",
+              "additionalProperties": { "type": ["string", "number", "boolean", "null"] },
+              "description": "只在匹配该 variant 的页面状态上成立；空 = 该 screen 的所有 variant"
+            },
+            "region": { "type": "string", "minLength": 1, "description": "screen asset 里声明的命名区域" }
+          }
+        },
+        "relation": {
+          "enum": ["renders", "gates_visibility", "orders", "populates", "enables_action", "styles"],
+          "description": "字段以何种方式作用于该 region"
+        },
+        "confidence": {
+          "enum": ["observed", "correlated", "causal", "stale"],
+          "description": "observed=同现；correlated=多 run 稳定共现；causal=控制变量实验或后端权威契约；stale=证据失效"
+        },
+        "sensitivity": {
+          "enum": ["normal", "sensitive"],
+          "description": "sensitive（会员码/手机号/地址/支付/精确位置）：raw 帧不进可分享报告，只断言结构与状态"
+        },
+        "volatile": { "type": "boolean", "description": "该 region 天然动态（倒计时/资产数值/运营位）：禁止固定像素断言，视觉层降级为 advisory" },
+        "evidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "证据链。confidence=causal 要求 negative_control_runs 非空或 authority=backend_contract（由 bindings.promote 闸强制）。",
+          "properties": {
+            "positive_runs": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+            "negative_control_runs": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+            "authority": {
+              "enum": ["none", "backend_contract"],
+              "description": "backend_contract=后端权威契约直接声明该字段驱动该区域"
+            },
+            "observed_count": { "type": "integer", "minimum": 0 },
+            "no_match_streak": { "type": "integer", "minimum": 0, "description": "连续多少次 run 没能再观测到；达阈值判 stale" },
+            "last_seen_build": { "type": "string", "minLength": 1 },
+            "note": { "type": "string" }
+          }
+        },
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["source"],
+          "properties": {
+            "source": { "enum": ["backend_manifest", "observed", "experiment", "conversation"] },
+            "from": { "type": "string" },
+            "run_id": { "type": "string" },
+            "note": { "type": "string" }
+          }
+        },
+        "deprecate_reason": { "type": "string" }
+      }
+    }
+  }
+}

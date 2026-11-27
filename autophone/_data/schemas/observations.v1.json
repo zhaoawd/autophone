@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/observations.v1.json",
+  "title": "Compiled run observations",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run_id", "app", "observations"],
+  "properties": {
+    "schema_version": {"const": "v1"},
+    "run_id": {"type": "string", "minLength": 1},
+    "app": {"type": "string", "minLength": 1},
+    "observations": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/observation"}
+    }
+  },
+  "$defs": {
+    "observation": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "id", "type", "run_id", "case_id", "operation", "action_id",
+        "subject_epoch_ref", "occurred_at", "correlation_state",
+        "build_scope", "producer", "evidence_refs", "payload"
+      ],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "type": {"type": "string", "minLength": 1},
+        "run_id": {"type": "string", "minLength": 1},
+        "case_id": {"type": ["string", "null"]},
+        "operation": {"type": ["string", "null"]},
+        "action_id": {"type": "string", "minLength": 1},
+        "subject_epoch_ref": {"type": "string", "minLength": 1},
+        "occurred_at": {"type": "string"},
+        "correlation_state": {"enum": ["native", "legacy_derived"]},
+        "legacy_rule_version": {"type": ["string", "null"]},
+        "build_scope": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "subject_build_key"],
+          "properties": {
+            "state": {"enum": ["confirmed", "unknown"]},
+            "subject_build_key": {"type": ["string", "null"]}
+          }
+        },
+        "producer": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["kind", "state", "liveness"],
+          "properties": {
+            "kind": {"type": "string", "minLength": 1},
+            "state": {"type": "string", "minLength": 1},
+            "liveness": {"type": "string", "minLength": 1}
+          }
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        },
+        "payload": {"type": "object"}
+      }
+    }
+  }
+}

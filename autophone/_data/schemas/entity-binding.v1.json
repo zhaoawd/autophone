@@ -1,0 +1,544 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/entity-binding.v1.json",
+  "title": "EntityBinding",
+  "description": "用例级业务对象身份与多平面联合裁决契约（区分于不含实例 ID 的类级 field-binding.v1.json）。将具体业务实体身份（entity_type / entity_id / attributes）绑定到 UI、交互窗口内 API 抓取断言（api_window）、后置数据模型回读（readback）与 fail-closed 联合裁决策略（joint_verdict）。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "entity_type",
+    "entity_id"
+  ],
+  "properties": {
+    "entity_type": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S",
+      "description": "业务对象类型名，如 store、dish、order、preference_profile。"
+    },
+    "entity_id": {
+      "$ref": "#/$defs/entityIdValue",
+      "description": "预期业务对象实例 ID：支持标量字面量、{from_fixture: key} 或 {from_context: key}。"
+    },
+    "attributes": {
+      "type": "object",
+      "description": "业务对象附加预期属性映射，可在 api_window 中以 ${entity.<attr>} 引用，在 readback 中以 {from_entity: <attr>} 引用。",
+      "additionalProperties": {
+        "$ref": "#/$defs/attributeValue"
+      }
+    },
+    "api_window": {
+      "$ref": "#/$defs/apiWindow",
+      "description": "交互窗口内 API 请求/响应模型断言与禁止调用规则（自动排除 body_end / post_case_cleanup / entity_readback 尾段流量）。"
+    },
+    "readback": {
+      "$ref": "#/$defs/entityReadback",
+      "description": "后置只读数据模型回读声明（在 body_end 之后、teardown 之前执行，禁止引用不可逆操作）。"
+    },
+    "joint_verdict": {
+      "$ref": "#/$defs/jointVerdictPolicy",
+      "description": "多平面联合裁决策略；未显式声明时默认 require_ui=true、require_api=bool(api_window)、require_readback=bool(readback)。"
+    }
+  },
+  "$defs": {
+    "fromFixtureRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "from_fixture"
+      ],
+      "properties": {
+        "from_fixture": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        }
+      }
+    },
+    "fromContextRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "from_context"
+      ],
+      "properties": {
+        "from_context": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        }
+      }
+    },
+    "fromEntityRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "from_entity"
+      ],
+      "properties": {
+        "from_entity": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        }
+      }
+    },
+    "entityIdValue": {
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "$ref": "#/$defs/fromFixtureRef"
+        },
+        {
+          "$ref": "#/$defs/fromContextRef"
+        }
+      ]
+    },
+    "attributeValue": {
+      "oneOf": [
+        {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "null"
+          ]
+        },
+        {
+          "$ref": "#/$defs/fromFixtureRef"
+        },
+        {
+          "$ref": "#/$defs/fromContextRef"
+        }
+      ]
+    },
+    "readbackArgValue": {
+      "oneOf": [
+        {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "null"
+          ]
+        },
+        {
+          "$ref": "#/$defs/fromEntityRef"
+        },
+        {
+          "$ref": "#/$defs/fromContextRef"
+        },
+        {
+          "$ref": "#/$defs/fromFixtureRef"
+        }
+      ]
+    },
+    "windowScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "description": "交互窗口归因过滤条件，可按 symbol_id / operation / step / window_tag / action_id 精确限定。",
+      "properties": {
+        "symbol_id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "operation": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "step": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "window_tag": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "action_id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        }
+      }
+    },
+    "assertPredicate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "op"
+      ],
+      "properties": {
+        "op": {
+          "enum": [
+            "eq",
+            "ne",
+            "empty",
+            "exists",
+            "contains",
+            "present",
+            "regex",
+            "half_price_pair",
+            "gift_relation",
+            "computed_amount",
+            "aggregate_formula",
+            "numeric_relation",
+            "text_amount_formula"
+          ]
+        },
+        "value": {},
+        "price_field": {
+          "type": "string",
+          "minLength": 1
+        },
+        "base_field": {
+          "type": "string",
+          "minLength": 1
+        },
+        "factors": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "number"
+          }
+        },
+        "gift_filter": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean",
+              "null"
+            ]
+          }
+        },
+        "link_field": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target_field": {
+          "type": "string",
+          "minLength": 1
+        },
+        "refs": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "formula": {
+          "type": "string",
+          "minLength": 1
+        },
+        "relation": {
+          "enum": [
+            "gt",
+            "ge",
+            "lt",
+            "le",
+            "eq_min"
+          ]
+        },
+        "pattern": {
+          "type": "string",
+          "minLength": 1
+        },
+        "capture": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expected": {
+          "type": [
+            "string",
+            "number"
+          ]
+        },
+        "scale": {
+          "type": [
+            "string",
+            "number"
+          ]
+        }
+      }
+    },
+    "assertSpec": {
+      "oneOf": [
+        {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "null"
+          ]
+        },
+        {
+          "$ref": "#/$defs/assertPredicate"
+        }
+      ]
+    },
+    "apiExpectRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "anyOf": [
+        {
+          "required": [
+            "path"
+          ]
+        },
+        {
+          "required": [
+            "url_regex"
+          ]
+        },
+        {
+          "required": [
+            "url_glob"
+          ]
+        },
+        {
+          "required": [
+            "method"
+          ]
+        }
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "url_glob": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "url_regex": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "window": {
+          "$ref": "#/$defs/windowScope"
+        },
+        "bind": {
+          "enum": [
+            "first",
+            "last"
+          ]
+        },
+        "assert": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "$ref": "#/$defs/assertSpec"
+          }
+        }
+      }
+    },
+    "apiForbidRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "anyOf": [
+        {
+          "required": [
+            "path"
+          ]
+        },
+        {
+          "required": [
+            "url_regex"
+          ]
+        },
+        {
+          "required": [
+            "url_glob"
+          ]
+        },
+        {
+          "required": [
+            "method"
+          ]
+        }
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "url_glob": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "url_regex": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "window": {
+          "$ref": "#/$defs/windowScope"
+        }
+      }
+    },
+    "apiWindow": {
+      "type": "object",
+      "additionalProperties": false,
+      "anyOf": [
+        {
+          "required": [
+            "expect"
+          ]
+        },
+        {
+          "required": [
+            "forbid"
+          ]
+        }
+      ],
+      "properties": {
+        "window": {
+          "$ref": "#/$defs/windowScope"
+        },
+        "expect": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/apiExpectRule"
+          }
+        },
+        "forbid": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/apiForbidRule"
+          }
+        }
+      }
+    },
+    "readbackPredicate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "op"
+      ],
+      "properties": {
+        "op": {
+          "enum": [
+            "eq",
+            "ne",
+            "contains",
+            "exists",
+            "empty",
+            "regex"
+          ]
+        },
+        "value": {
+          "$ref": "#/$defs/readbackArgValue"
+        }
+      }
+    },
+    "expectContextValue": {
+      "oneOf": [
+        {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "null"
+          ]
+        },
+        {
+          "$ref": "#/$defs/fromEntityRef"
+        },
+        {
+          "$ref": "#/$defs/fromFixtureRef"
+        },
+        {
+          "$ref": "#/$defs/fromContextRef"
+        },
+        {
+          "$ref": "#/$defs/readbackPredicate"
+        }
+      ]
+    },
+    "entityReadback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "op"
+      ],
+      "properties": {
+        "op": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "with": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/readbackArgValue"
+          }
+        },
+        "expect_context": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "$ref": "#/$defs/expectContextValue"
+          }
+        }
+      }
+    },
+    "jointVerdictPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "require_ui": {
+          "type": "boolean",
+          "default": true
+        },
+        "require_api": {
+          "type": "boolean"
+        },
+        "require_readback": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

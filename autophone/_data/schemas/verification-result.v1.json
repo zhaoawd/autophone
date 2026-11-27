@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/verification-result.v1.json",
+  "title": "VerificationResult",
+  "description": "验证单 run 的逐 checkpoint 结果与人审状态。promotion gate 消费此文件，与 RunResult 同享契约先于服务口径。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run_id", "app", "status", "checkpoints"],
+  "properties": {
+    "schema_version": { "const": "v1" },
+    "run_id": { "type": "string", "minLength": 1 },
+    "app": { "type": "string", "minLength": 1 },
+    "requirement": { "type": "string" },
+    "draft_id": { "type": ["string", "null"] },
+    "source": { "type": ["string", "null"], "description": "verification yaml 来源路径；inline checkpoints 时为 null" },
+    "precondition": { "type": "object" },
+    "status": {
+      "enum": ["pending_agent", "passed", "failed", "error"],
+      "description": "pending_agent：agent 执行器未接/未回填"
+    },
+    "detail": { "type": "string" },
+    "checkpoints": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title", "status"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "title": { "type": "string" },
+          "status": { "enum": ["pending", "passed", "failed", "error", "skipped"] },
+          "evidence": { "type": "array", "items": { "type": "string" } },
+          "detail": { "type": "string" }
+        }
+      }
+    },
+    "review_status": { "enum": ["approved", "rejected", "needs_changes"] },
+    "reviewed_by": { "type": "string" },
+    "review_note": { "type": "string" },
+    "reviewed_at": { "type": "string", "format": "date-time" },
+    "reviews": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["status", "reviewer", "reviewed_at"],
+        "properties": {
+          "status": { "enum": ["approved", "rejected", "needs_changes"] },
+          "reviewer": { "type": "string" },
+          "note": { "type": "string" },
+          "reviewed_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  }
+}

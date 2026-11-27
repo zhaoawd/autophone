@@ -1,0 +1,284 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/build-identity.v2.json",
+  "title": "Build identity with typed RN candidate Subject Epochs",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "app",
+    "identity_state",
+    "identity_source",
+    "subject_build_key",
+    "device_observation",
+    "match",
+    "subject_epochs",
+    "updated_at",
+    "candidate_identity"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "v2"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "app": {
+      "type": "string",
+      "minLength": 1
+    },
+    "identity_state": {
+      "enum": [
+        "confirmed",
+        "unavailable",
+        "mismatch",
+        "ambiguous",
+        "version_only"
+      ]
+    },
+    "identity_source": {
+      "enum": [
+        "uds_info_plist",
+        "frida_bundle",
+        "combined",
+        "unavailable"
+      ]
+    },
+    "subject_build_key": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "device_observation": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true
+    },
+    "match": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "subject_epochs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "epoch_ref",
+          "pid",
+          "bundle_id",
+          "short_version",
+          "build_version",
+          "started_at",
+          "source",
+          "superseded_at"
+        ],
+        "properties": {
+          "epoch_ref": {
+            "type": "string",
+            "minLength": 1
+          },
+          "pid": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "bundle_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "short_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "build_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "source": {
+            "enum": [
+              "uds_info_plist",
+              "frida_bundle",
+              "rn_candidate"
+            ]
+          },
+          "superseded_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "candidate_identity_ref": {
+            "type": "string",
+            "pattern": "^candidate-identities/[0-9a-f]{64}\\.json$"
+          },
+          "candidate_identity_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "candidate_identity": {
+            "$ref": "#/$defs/candidate_identity"
+          },
+          "candidate_observed_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "dependentRequired": {
+          "candidate_identity": [
+            "candidate_identity_ref",
+            "candidate_identity_sha256"
+          ],
+          "candidate_identity_ref": [
+            "candidate_identity_sha256"
+          ],
+          "candidate_identity_sha256": [
+            "candidate_identity_ref"
+          ]
+        },
+        "allOf": [
+          {
+            "if": {
+              "required": [
+                "candidate_identity_ref"
+              ],
+              "properties": {
+                "superseded_at": {
+                  "const": null
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "candidate_identity"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "candidate_identity": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/candidate_identity"
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "candidate_identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "target_fingerprint",
+        "bundle_id",
+        "base_build_id",
+        "base_ipa_sha256",
+        "native_runtime_id",
+        "update_source",
+        "active_update_id",
+        "main_jsbundle_sha256",
+        "assets_tree_sha256",
+        "evidence_role",
+        "candidate_kind"
+      ],
+      "properties": {
+        "target_fingerprint": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "bundle_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)+$"
+        },
+        "base_build_id": {
+          "type": "string",
+          "pattern": "^bld-[0-9a-f]{12,64}$"
+        },
+        "base_ipa_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "native_runtime_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "update_source": {
+          "enum": [
+            "embedded",
+            "ota"
+          ]
+        },
+        "active_update_id": {
+          "type": "string",
+          "pattern": "^upd-[0-9A-Za-z._-]{1,120}$"
+        },
+        "main_jsbundle_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "assets_tree_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "projection_version": {
+          "const": "rn-native-projection/3"
+        },
+        "evidence_role": {
+          "const": "identity_only"
+        },
+        "candidate_kind": {
+          "enum": [
+            "rn_update",
+            "embedded"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "update_source": {
+                "const": "ota"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "candidate_kind": {
+                "const": "rn_update"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "candidate_kind": {
+                "const": "embedded"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

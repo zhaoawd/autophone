@@ -1,0 +1,229 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/springboard-residue-check.v2.json",
+  "title": "SpringBoardResidueCheck (v2)",
+  "description": "安装前只读检查的记录（v2，2026-10-09 判据放宽）：guest procexp <SpringBoard pid> regions 中出现任一 Tag: 255 区域即判为 Frida 残留（residue_regions 等于 tag255_regions）；detached_agent_regions 记 v1 三条件（Tag: 255、---/---、0x11c8000）命中的区域数，只作记录。verdict 为 residue 或 check_failed 时安装被拒绝，code 为对应错误码。v1 记录按 springboard-residue-check.v1.json 解释。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "verdict",
+    "code",
+    "detail",
+    "criterion",
+    "command",
+    "springboard",
+    "regions_parsed",
+    "tag255_regions",
+    "residue_regions",
+    "detached_agent_regions",
+    "elapsed_ms"
+  ],
+  "properties": {
+    "schema": {
+      "const": "autophone.springboard-residue-check/v2"
+    },
+    "verdict": {
+      "enum": [
+        "clean",
+        "residue",
+        "check_failed"
+      ]
+    },
+    "code": {
+      "enum": [
+        null,
+        "springboard_frida_residue",
+        "springboard_residue_check_failed"
+      ]
+    },
+    "detail": {
+      "type": "string"
+    },
+    "criterion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tag",
+        "match"
+      ],
+      "properties": {
+        "tag": {
+          "const": "Tag: 255"
+        },
+        "match": {
+          "const": "any_region"
+        }
+      }
+    },
+    "command": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "springboard": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "pid",
+            "started"
+          ],
+          "properties": {
+            "pid": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "started": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ]
+    },
+    "regions_parsed": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "tag255_regions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/region"
+      }
+    },
+    "residue_regions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/region"
+      }
+    },
+    "detached_agent_regions": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "elapsed_ms": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "verdict": {
+            "const": "clean"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "code": {
+            "const": null
+          },
+          "residue_regions": {
+            "maxItems": 0
+          },
+          "springboard": {
+            "type": "object"
+          },
+          "regions_parsed": {
+            "minimum": 1
+          },
+          "tag255_regions": {
+            "maxItems": 0
+          },
+          "detached_agent_regions": {
+            "const": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "verdict": {
+            "const": "residue"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "code": {
+            "const": "springboard_frida_residue"
+          },
+          "residue_regions": {
+            "minItems": 1
+          },
+          "springboard": {
+            "type": "object"
+          },
+          "tag255_regions": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "verdict": {
+            "const": "check_failed"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "code": {
+            "const": "springboard_residue_check_failed"
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "region": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tag",
+        "start",
+        "end",
+        "size",
+        "protection",
+        "share"
+      ],
+      "properties": {
+        "tag": {
+          "type": "string",
+          "minLength": 1
+        },
+        "start": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]+$"
+        },
+        "end": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]+$"
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "protection": {
+          "type": "string",
+          "pattern": "^[r-][w-][x-]/[r-][w-][x-]$"
+        },
+        "share": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

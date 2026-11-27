@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/release-index.v1.json",
+  "title": "ReleaseIndex",
+  "description": "内网发布通道中的 Autophone 版本索引。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "updated_at", "releases"],
+  "properties": {
+    "schema_version": { "const": "release-index.v1" },
+    "updated_at": { "type": "string", "format": "date-time" },
+    "releases": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["version", "commit", "built_at", "archive", "sha256", "sha256_file", "manifest", "release_notes"],
+        "properties": {
+          "version": {
+            "type": "string",
+            "pattern": "^v(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)$"
+          },
+          "commit": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{7,40}$"
+          },
+          "built_at": { "type": "string", "format": "date-time" },
+          "archive": {
+            "type": "string",
+            "pattern": "^\\.\\./v(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)/autophone-v(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.tar\\.gz$"
+          },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "sha256_file": {
+            "type": "string",
+            "pattern": "^\\.\\./v(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)/autophone-v(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.tar\\.gz\\.sha256$"
+          },
+          "manifest": {
+            "type": "string",
+            "pattern": "^\\.\\./v(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)/version\\.json$"
+          },
+          "release_notes": {
+            "type": "string",
+            "pattern": "^\\.\\./v(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)/RELEASE_NOTES\\.md$"
+          }
+        }
+      }
+    }
+  }
+}

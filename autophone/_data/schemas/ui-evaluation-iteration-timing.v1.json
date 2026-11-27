@@ -1,0 +1,223 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/ui-evaluation-iteration-timing.v1.json",
+  "title": "UI Evaluation Iteration Timing",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "status",
+    "cache_mode",
+    "clean_acceptance_eligible",
+    "stages"
+  ],
+  "properties": {
+    "schema_version": { "const": "ui-evaluation-iteration-timing/v1" },
+    "status": { "enum": ["succeeded", "failed"] },
+    "cache_mode": {
+      "enum": [
+        "clean",
+        "accelerated_cold",
+        "accelerated_warm",
+        "js_only",
+        "prepared_actual"
+      ]
+    },
+    "comparison_scenario": {
+      "enum": [
+        "clean",
+        "accelerated_cold",
+        "accelerated_warm",
+        "single_js_change_warm",
+        "js_only_repackage",
+        "prepared_actual"
+      ]
+    },
+    "clean_acceptance_eligible": { "type": "boolean" },
+    "source_tree_sha256": { "$ref": "#/$defs/sha256" },
+    "source_derivation": { "$ref": "#/$defs/singleJsDerivation" },
+    "stages": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "stage",
+          "status",
+          "elapsed_seconds",
+          "failure_code",
+          "cache_mode"
+        ],
+        "properties": {
+          "stage": {
+            "enum": [
+              "js_only_repackage",
+              "package_store_add",
+              "package_store_hash",
+              "scp",
+              "ipa_install",
+              "uicache",
+              "app_restart",
+              "state_ready",
+              "actual_capture",
+              "end_to_end"
+            ]
+          },
+          "status": { "enum": ["succeeded", "failed"] },
+          "elapsed_seconds": { "type": "number", "minimum": 0 },
+          "failure_code": {
+            "oneOf": [
+              { "type": "null" },
+              { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,127}$" }
+            ]
+          },
+          "cache_mode": { "$ref": "#/$defs/cacheMode" }
+        },
+        "allOf": [
+          {
+            "if": { "properties": { "status": { "const": "succeeded" } } },
+            "then": { "properties": { "failure_code": { "type": "null" } } },
+            "else": { "properties": { "failure_code": { "type": "string" } } }
+          }
+        ]
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "clean_acceptance_eligible": { "const": true } }
+      },
+      "then": {
+        "properties": {
+          "status": { "const": "succeeded" },
+          "cache_mode": { "const": "clean" },
+          "stages": {
+            "contains": {
+              "properties": {
+                "stage": { "const": "end_to_end" },
+                "status": { "const": "succeeded" }
+              },
+              "required": ["stage", "status"]
+            },
+            "minContains": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "anyOf": [
+          { "properties": { "status": { "const": "failed" } } },
+          {
+            "properties": {
+              "cache_mode": {
+                "enum": [
+                  "accelerated_cold",
+                  "accelerated_warm",
+                  "js_only",
+                  "prepared_actual"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "then": { "properties": { "clean_acceptance_eligible": { "const": false } } }
+    },
+    {
+      "if": {
+        "required": ["comparison_scenario"],
+        "properties": { "comparison_scenario": { "const": "single_js_change_warm" } }
+      },
+      "then": {
+        "required": ["source_tree_sha256", "source_derivation"],
+        "properties": { "cache_mode": { "const": "accelerated_warm" } }
+      }
+    },
+    {
+      "if": { "required": ["source_derivation"] },
+      "then": {
+        "required": ["comparison_scenario", "source_tree_sha256"],
+        "properties": {
+          "comparison_scenario": { "const": "single_js_change_warm" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "status": { "const": "succeeded" } } },
+      "then": {
+        "properties": {
+          "stages": {
+            "items": { "properties": { "status": { "const": "succeeded" } } }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "stages": {
+            "contains": { "properties": { "status": { "const": "failed" } } },
+            "minContains": 1
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "stages": {
+          "items": {
+            "properties": {
+              "cache_mode": { "$ref": "#/$defs/cacheMode" }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "cacheMode": {
+      "enum": [
+        "clean",
+        "accelerated_cold",
+        "accelerated_warm",
+        "js_only",
+        "prepared_actual"
+      ]
+    },
+    "singleJsDerivation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "baseline_source_tree_sha256",
+        "derived_source_tree_sha256",
+        "changes"
+      ],
+      "properties": {
+        "kind": { "const": "single_js_change" },
+        "baseline_source_tree_sha256": { "$ref": "#/$defs/sha256" },
+        "derived_source_tree_sha256": { "$ref": "#/$defs/sha256" },
+        "changes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "before_sha256", "after_sha256"],
+            "properties": {
+              "path": { "type": "string", "minLength": 1 },
+              "before_sha256": { "$ref": "#/$defs/sha256" },
+              "after_sha256": { "$ref": "#/$defs/sha256" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

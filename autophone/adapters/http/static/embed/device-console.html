@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>远程操作设备</title>
+<link rel="icon" href="data:,">
+<!--
+  远程操作嵌入页（BL-102）—— 由 GET /embed/device-console 返回。
+  · 独立于看板：不加载 dashboard 的任何脚本与样式，样式全在本文件里
+  · 入参走 URL query：device（设备键，必填）、mode（control / view，必填）、
+    embed（宿主给的会话标识）、host_origin（宿主来源）、demo=1（离线预览）
+  · 与宿主的 postMessage 协议见 /static/embed/device-console.js 顶部注释
+  · 鉴权不在本页：同源 iframe 自动带 Basic Auth 凭据（会话访问凭证归 BL-103）
+-->
+<style>
+  :root{
+    --g50:#f8f8f9;--g100:#f2f2f3;--g200:#e4e4e6;--g300:#cfcfd3;--g500:#818181;--g600:#5c5c5c;--g700:#3f3f42;--g800:#222;
+    --blue:#1473e6;--blue-d:#0d66d0;--blue-50:#e8f2fe;--red:#d7373f;--red-50:#fdecec;
+    --green:#268e6c;--green-50:#e6f4ef;--amber:#b7791f;--amber-50:#fdf3e1;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{margin:0;background:#fff;color:var(--g800);
+    font:13px/1.5 -apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",Arial,sans-serif;}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.95em;}
+  .embed-root{height:100%;display:grid;grid-template-columns:minmax(300px,470px) minmax(280px,1fr);}
+
+  /* ── 左：设备画面 ── */
+  .screen-pane{background:#111820;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:14px;min-height:0;}
+  .phone{position:relative;height:calc(100% - 34px);max-width:100%;aspect-ratio:454/980;flex:0 1 auto;
+    background:#05070a;border-radius:38px;padding:12px;box-shadow:0 0 0 2px #2a333f,0 18px 40px rgba(0,0,0,.5);}
+  /* 不画刘海：真机截图自带状态栏，遮住会看不到时间、电量，也点不到状态栏。 */
+  .screen-box{position:relative;height:100%;width:100%;aspect-ratio:430/932;background:#000;overflow:hidden;border-radius:28px;}
+  .screen-box img{width:100%;height:100%;display:block;object-fit:contain;touch-action:none;user-select:none;cursor:crosshair;}
+  .screen-box img.readonly{cursor:default;}
+  .wait{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+    color:#aab5c2;font-size:13px;pointer-events:none;text-align:center;padding:0 18px;background:rgba(5,7,10,.72);}
+  .wait::before{content:"";width:22px;height:22px;border-radius:50%;border:2px solid #3b4756;border-top-color:#8fb4e6;animation:spin 1s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .fx{position:absolute;inset:0;pointer-events:none;z-index:2;}
+  .ripple{position:absolute;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;
+    border:2px solid #fff;background:rgba(20,115,230,.35);animation:ripple .55s ease-out forwards;}
+  @keyframes ripple{from{transform:scale(.35);opacity:1;}to{transform:scale(1.15);opacity:0;}}
+  .stroke{position:absolute;inset:0;width:100%;height:100%;animation:fade .7s ease-out forwards;}
+  @keyframes fade{0%,60%{opacity:1;}100%{opacity:0;}}
+  .screen-bar{width:100%;max-width:470px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    color:#aab5c2;font-size:11.5px;min-height:24px;}
+  .screen-bar .dot{width:8px;height:8px;border-radius:50%;background:#4b5563;flex-shrink:0;}
+  .screen-bar .dot.live{background:#3cc47c;box-shadow:0 0 0 3px rgba(60,196,124,.25);}
+  .screen-bar .dot.bad{background:var(--red);}
+  .screen-bar .sp{flex:1;}
+  .screen-bar .mono{color:#d7dde5;}
+
+  /* ── 右：会话与操作 ── */
+  .side-pane{padding:18px 20px 16px;display:flex;flex-direction:column;gap:14px;min-height:0;overflow:auto;background:#fff;}
+  /* 右上角留白：宿主（autophone 弹窗）的关闭按钮浮在 iframe 之上。 */
+  .head{padding-right:44px;display:flex;flex-direction:column;gap:4px;}
+  .head-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .title{font-size:17px;font-weight:800;line-height:1.2;}
+  .badge{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:9999px;font-size:11px;font-weight:700;}
+  .badge-control{background:var(--blue-50);color:var(--blue-d);}
+  .badge-view{background:var(--g100);color:var(--g600);}
+  .meta{font-size:11px;color:var(--g500);overflow-wrap:anywhere;}
+
+  .card{border:1px solid var(--g200);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:10px;}
+  .card-head{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--g500);}
+  .status{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:9px;background:var(--green-50);color:var(--green);font-size:12.5px;font-weight:700;}
+  .status::before{content:"";width:9px;height:9px;border-radius:50%;background:currentColor;flex-shrink:0;}
+  .status-bad{background:var(--red-50);color:var(--red);}
+  .status-wait{background:var(--amber-50);color:var(--amber);}
+  .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
+  .stat{background:var(--g50);border-radius:9px;padding:8px 10px;min-width:0;}
+  .stat b{display:block;font-size:16px;font-weight:800;line-height:1.2;color:var(--g800);}
+  .stat span{font-size:10.5px;color:var(--g500);}
+  .last{font-size:11.5px;color:var(--g600);display:flex;gap:6px;align-items:baseline;flex-wrap:wrap;}
+  .last .mono{color:var(--g800);}
+
+  .howto{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
+  .how{display:flex;flex-direction:column;gap:3px;padding:9px 10px;border-radius:9px;background:var(--g50);font-size:11.5px;color:var(--g600);line-height:1.45;}
+  .how b{font-size:12px;color:var(--g800);}
+  .how .glyph{font-size:16px;line-height:1;color:var(--blue);}
+
+  .keys{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;}
+  .key{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;height:56px;border-radius:10px;
+    border:1px solid var(--g300);background:#fff;color:var(--g700);font-size:12px;font-weight:700;cursor:pointer;}
+  .key .glyph{font-size:18px;line-height:1;font-weight:400;}
+  .key:hover:not(:disabled){background:var(--g100);border-color:var(--g500);}
+  .key:disabled{opacity:.45;cursor:not-allowed;}
+
+  .steps{display:flex;gap:6px;flex-wrap:wrap;font-size:11.5px;color:var(--g600);}
+  .steps span{display:inline-flex;align-items:center;gap:5px;}
+  .steps i{font-style:normal;display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:var(--blue-50);color:var(--blue-d);font-size:10px;font-weight:800;}
+  .row{display:flex;gap:8px;}
+  .input{flex:1;height:36px;padding:0 11px;border:1px solid var(--g300);border-radius:9px;font-size:13px;background:#fff;color:var(--g800);min-width:0;}
+  .input:focus{outline:2px solid var(--blue);outline-offset:-1px;border-color:var(--blue);}
+  .btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 14px;border-radius:9px;
+    border:1px solid transparent;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+  .btn-outline{background:#fff;border-color:var(--g300);color:var(--g700);}
+  .btn-outline:hover:not(:disabled){background:var(--g100);}
+  .btn-accent{background:var(--blue);color:#fff;}
+  .btn-accent:hover:not(:disabled){background:var(--blue-d);}
+  .btn-danger{background:#fff;border-color:var(--red);color:var(--red);}
+  .btn-danger:hover:not(:disabled){background:var(--red-50);}
+
+  .notice{padding:9px 12px;border-radius:9px;font-size:12.5px;}
+  .notice-ok{background:var(--blue-50);color:var(--blue-d);}
+  .notice-error{background:var(--red-50);color:var(--red);}
+  .notice[hidden]{display:none;}
+  .foot{margin-top:auto;display:flex;flex-direction:column;gap:8px;padding-top:6px;border-top:1px solid var(--g200);}
+  .foot .fine{font-size:11px;color:var(--g500);line-height:1.5;}
+  .foot .btn{width:100%;height:40px;}
+  details.more{font-size:11.5px;color:var(--g600);}
+  details.more summary{cursor:pointer;color:var(--g500);font-weight:700;list-style:none;}
+  details.more summary::before{content:"▸ ";}
+  details.more[open] summary::before{content:"▾ ";}
+  details.more p{margin:6px 0 0;line-height:1.55;}
+  /* 窄容器（B 端小尺寸 iframe / 笔记本竖排）：画面在上、控件在下。 */
+  @media (max-width:640px){
+    /* 画面固定占上半区（最少 300px），控件区可滚动，不让说明与按钮把画面挤没。 */
+    .embed-root{grid-template-columns:1fr;grid-template-rows:minmax(300px,48%) minmax(0,1fr);}
+    .side-pane{padding:14px;}
+    .phone{height:calc(100% - 30px);}
+    .howto{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<script src="/static/embed/device-console.js?v=20260929-embed-ux"></script>
+</body>
+</html>

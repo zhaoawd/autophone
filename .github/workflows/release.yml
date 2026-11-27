@@ -1,0 +1,190 @@
+name: Release Public Core
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-verify:
+    name: Build, verify, audit compliance and checksum release artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      tag_verified: ${{ steps.verify-tag.outputs.verified }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
+        with:
+          enable-cache: true
+      - name: Set up Python 3.13
+        run: uv python install 3.13
+      - name: Enforce public content and full git history hygiene
+        run: python3 scripts/check_public_content.py --check-git-history
+      - id: verify-tag
+        name: Verify release tag matches package versions
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          uv run --python 3.13 --no-project python - <<'PY'
+          import os
+          import tomllib
+          from pathlib import Path
+
+          tag = os.environ["TAG_NAME"]
+          expected = tag.removeprefix("v")
+          manifests = [
+              Path("pyproject.toml"),
+              Path("pkgs/autophone-kernel/pyproject.toml"),
+              Path("pkgs/autophone-rig/pyproject.toml"),
+              Path("pkgs/autophone-domain/pyproject.toml"),
+              Path("pkgs/autophone-console/pyproject.toml"),
+          ]
+          discovered = sorted(Path("pkgs").glob("autophone-*/pyproject.toml"))
+          if discovered != sorted(manifests[1:]):
+              raise SystemExit(
+                  f"Workspace package set mismatch: discovered={discovered}, expected={sorted(manifests[1:])}"
+              )
+          mismatches = []
+          for path in manifests:
+              data = tomllib.loads(path.read_text(encoding="utf-8"))
+              actual = data["project"]["version"]
+              if actual != expected:
+                  mismatches.append(f"{path}: {actual!r} != {expected!r}")
+          if mismatches:
+              raise SystemExit(
+                  f"Release tag {tag!r} does not match package versions:\n" + "\n".join(mismatches)
+              )
+          print(f"Verified tag {tag} matches all {len(manifests)} manifests ({expected}).")
+          PY
+          echo "verified=true" >> "$GITHUB_OUTPUT"
+      - name: Build public core wheels and sdists
+        run: scripts/build_public_core.sh dist/core
+      - name: Verify clean wheel and sdist installs
+        run: |
+          uv venv --python 3.13 .venv-wheel
+          uv pip install --python .venv-wheel/bin/python dist/core/*.whl
+          uv pip check --python .venv-wheel/bin/python
+          .venv-wheel/bin/python -I scripts/verify_core_install.py examples/food-ordering
+          AUTOPHONE_APP_ASSET_DIR="$PWD/examples/ios-settings-smoke" .venv-wheel/bin/python -I scripts/verify_core_install.py examples/ios-settings-smoke
+          uv venv --python 3.13 .venv-sdist
+          uv pip install --python .venv-sdist/bin/python dist/core/*.tar.gz
+          uv pip check --python .venv-sdist/bin/python
+          .venv-sdist/bin/python -I scripts/verify_core_install.py examples/food-ordering
+          AUTOPHONE_APP_ASSET_DIR="$PWD/examples/ios-settings-smoke" .venv-sdist/bin/python -I scripts/verify_core_install.py examples/ios-settings-smoke
+      - name: Generate SHA256 checksums
+        run: |
+          cd dist/core
+          sha256sum *.whl *.tar.gz > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+      - name: Audit runtime dependency licenses and generate RELEASE-COMPLIANCE.json
+        env:
+          RELEASE_COMMIT: ${{ github.sha }}
+          RELEASE_TAG: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '' }}
+        run: |
+          .venv-wheel/bin/python -I scripts/audit_release_compliance.py \
+            --dist-dir dist/core \
+            --checksums dist/core/SHA256SUMS.txt \
+            --repo "$PWD" \
+            --check-git-history \
+            --commit "$RELEASE_COMMIT" \
+            --tag "$RELEASE_TAG" \
+            --output dist/core/RELEASE-COMPLIANCE.json
+          cat dist/core/RELEASE-COMPLIANCE.json
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: core-release-artifacts
+          path: |
+            dist/core/*.whl
+            dist/core/*.tar.gz
+            dist/core/SHA256SUMS.txt
+            dist/core/RELEASE-COMPLIANCE.json
+          if-no-files-found: error
+
+  attest:
+    name: Attest build provenance (SLSA)
+    needs: build-and-verify
+    if: startsWith(github.ref, 'refs/tags/v') && needs.build-and-verify.outputs.tag_verified == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: core-release-artifacts
+          path: dist/core
+      - name: Verify downloaded artifacts against SHA256SUMS.txt
+        run: |
+          cd dist/core
+          sha256sum -c SHA256SUMS.txt
+      - name: Attest build provenance (SLSA)
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
+        with:
+          subject-checksums: dist/core/SHA256SUMS.txt
+
+  github-release:
+    name: Publish GitHub Release
+    needs: [build-and-verify, attest]
+    if: startsWith(github.ref, 'refs/tags/v') && needs.build-and-verify.outputs.tag_verified == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: core-release-artifacts
+          path: dist/core
+      - name: Verify downloaded artifacts against SHA256SUMS.txt
+        run: |
+          cd dist/core
+          sha256sum -c SHA256SUMS.txt
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
+        with:
+          files: |
+            dist/core/*.whl
+            dist/core/*.tar.gz
+            dist/core/SHA256SUMS.txt
+            dist/core/RELEASE-COMPLIANCE.json
+          generate_release_notes: true
+
+  publish-pypi:
+    name: Publish distributions to PyPI
+    needs: [build-and-verify, attest]
+    if: startsWith(github.ref, 'refs/tags/v') && needs.build-and-verify.outputs.tag_verified == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: pypi
+      url: https://pypi.org/p/autophone
+    permissions:
+      id-token: write
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: core-release-artifacts
+          path: dist/core
+      - name: Verify downloaded artifacts and remove non-distribution metadata files
+        run: |
+          (cd dist/core && sha256sum -c SHA256SUMS.txt)
+          rm -f dist/core/SHA256SUMS.txt dist/core/RELEASE-COMPLIANCE.json
+      - name: Publish packages to PyPI
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          packages-dir: dist/core
+          skip-existing: true

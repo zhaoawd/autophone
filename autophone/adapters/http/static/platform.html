@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Autophone · 设备控制台</title><link rel="icon" href="data:,">
+<link rel="stylesheet" href="/static/platform.css?v=1">
+</head><body>
+<header><strong>Autophone</strong><!-- workspace --></header>
+<main>
+<h1>设备控制台</h1>
+<section aria-labelledby="rig-heading"><h2 id="rig-heading">设备</h2>
+<label for="rig">目标 Rig</label> <select id="rig" disabled></select> <button id="refresh">刷新设备列表</button>
+<p id="status" role="status"></p>
+</section>
+<section><h2>远程操作</h2>
+<fieldset disabled id="controls"><button id="console">打开控制台</button> <button id="screenshot">读取截图</button></fieldset>
+<p id="screen-status" role="status"></p><img id="screen" alt="所选设备的截图" hidden></section>
+<section><h2>系统定位</h2>
+<fieldset disabled id="location-controls"><button id="current">读取当前位置</button>
+<form id="fixed"><label>纬度（WGS-84）<input name="lat" type="number" min="-90" max="90" step="any" required></label>
+<label>经度（WGS-84）<input name="lon" type="number" min="-180" max="180" step="any" required></label>
+<button>设置定点</button></form>
+<form id="route"><label>内置路线<select id="routes" required></select></label><button>开始回放</button></form>
+<div id="sessions"></div></fieldset>
+<pre role="status" id="reading"></pre></section>
+<details id="workspace"><summary>用例回归、IPA 与录制</summary>
+  <p id="workspace-target" role="status"></p>
+  <label for="workspace-app">App Profile</label>
+  <select id="workspace-app" disabled><option value="">选择 App</option></select>
+  <section><h2>用例回归与报告</h2>
+    <p id="workspace-run-status" role="status"></p>
+    <ul id="workspace-cases" aria-label="已存用例"></ul>
+    <h3>最近运行与证据报告</h3>
+    <ul id="workspace-runs" aria-label="运行与证据报告"></ul>
+  </section>
+  <section><h2>IPA 构建</h2>
+    <form id="workspace-upload"><label>添加 IPA <input type="file" name="ipa" accept=".ipa" required></label>
+      <button disabled>上传并入库</button></form>
+    <p id="workspace-installed" role="status"></p>
+    <ul id="workspace-builds"></ul>
+  </section>
+  <section><h2>录制与回放</h2>
+    <button id="workspace-record" disabled>开始录制</button>
+    <div id="workspace-live" hidden>
+      <img id="workspace-frame" alt="录制中的设备画面" tabindex="0">
+      <form id="workspace-clipboard"><label>剪贴板文本 <input name="text" required></label><button>写入剪贴板</button></form>
+      <button id="workspace-home">主屏幕</button>
+      <button id="workspace-finish">完成录制</button>
+      <button id="workspace-cancel">取消录制</button>
+    </div>
+    <ul id="workspace-recordings"></ul>
+    <ul id="workspace-result" aria-label="回放结果"></ul>
+  </section>
+  <p id="workspace-message" role="status"></p>
+</details>
+</main><script src="/static/dashboard/device-console.js?v=1"></script><script src="/static/platform.js?v=1"></script>
+<script src="/static/platform-workspace.js?v=1"></script>
+</body></html>

@@ -1,0 +1,160 @@
+{
+  "schema": "autophone.route-fixture/v1",
+  "route_id": "example-demo-route-1p8km-driving",
+  "coordinate_system": "GCJ-02",
+  "travel_mode": "driving",
+  "origin": {
+    "lat": 31.23,
+    "lng": 121.47
+  },
+  "destination": {
+    "name": "示例终点",
+    "lat": 31.238,
+    "lng": 121.48
+  },
+  "geometry": {
+    "type": "LineString",
+    "coordinates": [
+      [
+        121.47,
+        31.23
+      ],
+      [
+        121.4708333,
+        31.23
+      ],
+      [
+        121.4716667,
+        31.23
+      ],
+      [
+        121.4725,
+        31.23
+      ],
+      [
+        121.4733333,
+        31.23
+      ],
+      [
+        121.4741667,
+        31.23
+      ],
+      [
+        121.475,
+        31.23
+      ],
+      [
+        121.4758333,
+        31.23
+      ],
+      [
+        121.4766667,
+        31.23
+      ],
+      [
+        121.4775,
+        31.23
+      ],
+      [
+        121.4783333,
+        31.23
+      ],
+      [
+        121.4791667,
+        31.23
+      ],
+      [
+        121.48,
+        31.23
+      ],
+      [
+        121.48,
+        31.2308
+      ],
+      [
+        121.48,
+        31.2316
+      ],
+      [
+        121.48,
+        31.2324
+      ],
+      [
+        121.48,
+        31.2332
+      ],
+      [
+        121.48,
+        31.234
+      ],
+      [
+        121.48,
+        31.2348
+      ],
+      [
+        121.48,
+        31.2356
+      ],
+      [
+        121.48,
+        31.2364
+      ],
+      [
+        121.48,
+        31.2372
+      ],
+      [
+        121.48,
+        31.238
+      ]
+    ]
+  },
+  "maneuvers": [
+    {
+      "provider_step_index": 0,
+      "point": [
+        121.47,
+        31.23
+      ],
+      "distance_m": 951,
+      "turn": null,
+      "road_name": "",
+      "instructions": "直行"
+    },
+    {
+      "provider_step_index": 1,
+      "point": [
+        121.48,
+        31.23
+      ],
+      "distance_m": 890,
+      "turn": "left",
+      "road_name": "",
+      "instructions": "左转"
+    },
+    {
+      "provider_step_index": 2,
+      "point": [
+        121.48,
+        31.238
+      ],
+      "distance_m": 0,
+      "turn": null,
+      "road_name": "",
+      "instructions": "到达"
+    }
+  ],
+  "source": {
+    "provider": "synthetic-example",
+    "captured_at": "2026-10-15",
+    "store_code": "DEMO001",
+    "note": "Synthetic route for tests and demos; coordinates are illustrative and do not identify a real store.",
+    "route_summary": {
+      "provider_distance_m": 1840,
+      "provider_duration_s": 230,
+      "provider_step_count": 3,
+      "geometry_distance_m": 1840.4,
+      "geometry_method": "synthetic-polyline"
+    }
+  }
+}

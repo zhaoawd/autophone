@@ -1,0 +1,138 @@
+name: Public Core CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: public-core-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-docs:
+    name: Lint, content and reference docs gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
+        with:
+          enable-cache: true
+      - name: Set up Python 3.13
+        run: uv python install 3.13
+      - name: Sync dependencies
+        run: uv sync --locked --group platform --group contract
+      - name: Static lint gate (ruff)
+        run: uv run --only-group dev ruff check .
+      - name: Verify generated reference docs are up to date
+        run: uv run --group platform python scripts/generate_public_docs.py --check
+      - name: Check public content and Markdown links
+        run: python3 scripts/check_public_content.py
+      - name: Verify standalone vphone_mcp package
+        run: |
+          uv --directory vphone_mcp sync --locked
+          uv --directory vphone_mcp run python -c "import vphone_mcp.server"
+
+  native-ocr:
+    name: Native macOS Vision OCR (source & wheel)
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
+        with:
+          enable-cache: true
+      - run: uv run --locked python -m autophone.device.ocr_target probe
+      - run: scripts/build_public_core.sh dist/core
+      - run: |
+          uv venv --python 3.13 .venv-wheel
+          uv pip install --python .venv-wheel/bin/python dist/core/*.whl
+          XDG_CACHE_HOME="$RUNNER_TEMP/wheel-cache" .venv-wheel/bin/python -I -m autophone.device.ocr_target probe
+
+  platform-tests:
+    name: Public platform tests (PostgreSQL)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: platform_test
+          POSTGRES_PASSWORD: platform_test
+          POSTGRES_DB: platform_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U platform_test -d platform_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      AUTOPHONE_TEST_POSTGRES_DSN: postgresql://platform_test:platform_test@127.0.0.1:5432/platform_test?connect_timeout=5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
+        with:
+          enable-cache: true
+      - name: Set up Python 3.13
+        run: uv python install 3.13
+      - name: Sync dependencies
+        run: uv sync --locked --group platform --group contract
+      - name: Run public platform pytest suite
+        run: .venv/bin/python -m pytest -q @tests/public_platform.txt -m "not live_device and not live_frida"
+
+  build-and-install:
+    name: Public core package build & clean install (3.11–3.13)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12', '3.13']
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
+        with:
+          enable-cache: true
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+      - name: Build public core wheels and sdists
+        run: scripts/build_public_core.sh dist/core
+      - name: Clean wheel install and synthetic verification
+        run: |
+          uv venv --python ${{ matrix.python-version }} .venv-core
+          uv pip install --python .venv-core/bin/python dist/core/*.whl
+          uv pip check --python .venv-core/bin/python
+          .venv-core/bin/python -I scripts/verify_core_install.py examples/food-ordering
+          AUTOPHONE_APP_ASSET_DIR="$PWD/examples/ios-settings-smoke" .venv-core/bin/python -I scripts/verify_core_install.py examples/ios-settings-smoke
+          uv venv --python ${{ matrix.python-version }} .venv-sdist
+          uv pip install --python .venv-sdist/bin/python dist/core/*.tar.gz
+          .venv-sdist/bin/python -I scripts/verify_core_install.py examples/ios-settings-smoke
+
+  dashboard-e2e:
+    name: Core console browser E2E (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
+        with:
+          enable-cache: true
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Run Frida agent unit tests (Node.js)
+        run: npm --prefix autophone/observation/frida/agent test
+      - name: Set up Python 3.13
+        run: uv python install 3.13
+      - name: Sync dashboard runtime dependencies
+        run: uv sync --locked --group platform
+      - name: Install Playwright and Chromium
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Run core dashboard E2E specs
+        run: npm run test:dashboard-e2e

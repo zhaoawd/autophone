@@ -1,0 +1,288 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/case-registry.v2.json",
+  "title": "CaseRegistry",
+  "description": "业务用例库 v2。Case 记录测试意图和断言；历史上写入 Case.steps 的 typed IR 暂按兼容联合类型读取，新增执行步骤应进入 Recipe/Operation。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["meta", "cases"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "total", "next_seq"],
+      "properties": {
+        "title": { "type": "string", "minLength": 1 },
+        "app": { "type": "string", "minLength": 1 },
+        "source": { "type": "string" },
+        "source_total": { "type": "integer", "minimum": 0 },
+        "total": { "type": "integer", "minimum": 0 },
+        "canonical_total": { "type": "integer", "minimum": 0 },
+        "schema_version": { "const": 2 },
+        "next_seq": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "下一条自动分配的 R 序号；允许历史空洞，但必须大于全部现存、id_reservations 保留和 retired_ids 退休的 id 序号。"
+        },
+        "id_reservations": {
+          "type": "object",
+          "description": "显式 Case ID 预留：key 为稳定 R-id，value 为唯一可领取该 ID 的 raw.external_id。预留项不计入 meta.total。",
+          "propertyNames": { "pattern": "^R[1-9][0-9]*$" },
+          "additionalProperties": { "type": "string", "minLength": 1, "pattern": "\\S" }
+        },
+        "retired_ids": {
+          "type": "array",
+          "description": "已永久退出分配面的稳定 Case ID tombstone；不计入 meta.total，且不得重新出现在 cases 或 id_reservations。",
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^R[1-9][0-9]*$" }
+        },
+        "note": { "type": "string" },
+        "lifecycle_policy": { "type": "object", "additionalProperties": true },
+        "scalar_field_policy": { "type": "object", "additionalProperties": true }
+      }
+    },
+    "stats": { "$ref": "#/$defs/importStats" },
+    "cases": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/case" }
+    }
+  },
+  "$defs": {
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "status", "revision", "item"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^R[1-9][0-9]*$",
+          "description": "稳定主键，由 meta.next_seq 分配。"
+        },
+        "status": {
+          "enum": ["draft", "active", "deprecated", "archived"],
+          "description": "资产生命周期；执行就绪度不得写入 status。"
+        },
+        "revision": { "type": "integer", "minimum": 1 },
+        "row": { "type": "integer", "minimum": 1 },
+        "module": { "type": "string" },
+        "item": { "type": "string", "minLength": 1 },
+        "order_type": { "type": ["string", "null"] },
+        "level": { "type": "string" },
+        "automation": {
+          "enum": [
+            "",
+            "ui_ready",
+            "needs_fixture",
+            "blocked_by_infra",
+            "manual_checkpoint",
+            "phase4_prefix_api"
+          ],
+          "description": "执行就绪度。空值供 draft 待复核；phase4_prefix_api 仅兼容既有专项用例。"
+        },
+        "automation_reason": { "type": "string" },
+        "login_precondition": { "enum": ["required", "logged_out", "any"] },
+        "desc": { "type": "string" },
+        "remark": { "type": "string" },
+        "case_type": { "type": "string" },
+        "test_point": { "type": "string" },
+        "owner": { "type": "string" },
+        "import_semantics": { "$ref": "#/$defs/importSemantics" },
+        "precondition": { "$ref": "#/$defs/stringList" },
+        "steps": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/caseStep" },
+          "description": "人类可读步骤；typed IR object 仅为历史兼容形态，lint 会报告 warning。"
+        },
+        "expects": { "$ref": "#/$defs/stringList" },
+        "expects_telemetry": { "$ref": "#/$defs/stringList" },
+        "suites": { "$ref": "#/$defs/stringList" },
+        "suitable": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "api": { "type": "string" },
+            "ui": { "type": "string" }
+          }
+        },
+        "setup": { "$ref": "#/$defs/operationReferences" },
+        "teardown": { "$ref": "#/$defs/operationReferences" },
+        "post_case_cleanup": { "$ref": "#/$defs/operationReferences" },
+        "suggested_setup": { "$ref": "#/$defs/operationReferences" },
+        "suggested_teardown": { "$ref": "#/$defs/operationReferences" },
+        "entity_binding": {
+          "$ref": "entity-binding.v1.json",
+          "description": "用例级业务对象身份与 UI/API/Readback 联合裁决契约（区分于不含实例 ID 的类级 field-binding.v1.json）。"
+        },
+        "flow": { "$ref": "#/$defs/flow" },
+        "flows": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/flow" }
+        },
+        "scheduling": { "type": "object", "additionalProperties": true },
+        "business_family": { "type": "string" },
+        "family_id": { "type": "string" },
+        "pair_id": { "type": "string" },
+        "family_variant": { "type": "string" },
+        "coverage": { "type": "string" },
+        "delivery_contract": { "type": "string" },
+        "order_consumes": { "type": "boolean" },
+        "produces_duty_state": { "type": "string" },
+        "deprecate_reason": { "type": "string" },
+        "raw": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "external_id": { "type": "string" },
+            "source_ref": { "type": "string" }
+          }
+        },
+        "provenance": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "source": { "type": "string", "minLength": 1 },
+            "from": { "type": "string" },
+            "note": { "type": "string" }
+          }
+        }
+      }
+    },
+    "importStats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["by_automation", "by_module"],
+      "properties": {
+        "by_automation": { "$ref": "#/$defs/nonnegativeCounts" },
+        "by_module": { "$ref": "#/$defs/nonnegativeCounts" }
+      }
+    },
+    "nonnegativeCounts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "importSemantics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "source",
+        "input_fingerprint",
+        "summary",
+        "preconditions",
+        "actions",
+        "assertions"
+      ],
+      "properties": {
+        "version": { "const": 1 },
+        "source": { "enum": ["import", "derived"] },
+        "input_fingerprint": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "summary": { "type": "string", "minLength": 1 },
+        "preconditions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/importPrecondition" }
+        },
+        "actions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/importAction" }
+        },
+        "assertions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/importAssertion" }
+        }
+      }
+    },
+    "importPrecondition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "label"],
+      "properties": {
+        "kind": {
+          "enum": ["login_state", "order_state", "location", "app_state", "other"]
+        },
+        "label": { "type": "string", "minLength": 1 }
+      }
+    },
+    "importAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "target", "label"],
+      "properties": {
+        "kind": {
+          "enum": ["tap", "navigate", "input", "select", "wait", "check", "other"]
+        },
+        "target": { "type": "string", "minLength": 1 },
+        "label": { "type": "string", "minLength": 1 },
+        "branch": { "enum": ["cancel", "confirm"] }
+      }
+    },
+    "importAssertion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "label"],
+      "properties": {
+        "kind": { "enum": ["state_change", "visibility", "other"] },
+        "label": { "type": "string", "minLength": 1 }
+      }
+    },
+    "stringList": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "caseStep": {
+      "oneOf": [
+        { "type": "string", "minLength": 1 },
+        {
+          "type": "object",
+          "required": ["action"],
+          "not": { "required": ["operation"] },
+          "properties": {
+            "action": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": true
+        },
+        {
+          "type": "object",
+          "required": ["operation"],
+          "additionalProperties": false,
+          "properties": {
+            "operation": { "type": "string", "minLength": 1 },
+            "args": { "type": "object" }
+          }
+        }
+      ]
+    },
+    "operationReferences": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/operationReference" }
+    },
+    "operationReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["op"],
+      "properties": {
+        "op": { "type": "string", "minLength": 1 },
+        "with": { "type": "object" },
+        "reason": { "type": "string" }
+      }
+    },
+    "flow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "step"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "step": { "type": "integer", "minimum": 0 },
+        "runtime_actor_variant": { "type": "string" },
+        "requires": { "type": "string" },
+        "produces": { "type": "string" },
+        "fixture": { "type": "string" }
+      }
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/verification-executor-output.v1.json",
+  "title": "VerificationExecutorOutput",
+  "description": "验证单 agent 执行器（AUTOPHONE_VERIFICATION_AGENT_CMD）的回填契约。run_verification_executor 读这份按 checkpoint id 合并回 verification-result（见 verification.py _merge_executor_result）。这是 platform-ai-capability §3.2 / AI-2 的输出形态：agent 逐 checkpoint 驱动真机、绑证据、判 pass/fail。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["checkpoints"],
+  "properties": {
+    "schema_version": { "const": "v1" },
+    "status": {
+      "enum": ["passed", "failed", "error", "pending_agent"],
+      "description": "执行器总裁决；省略时 verification.py 由 checkpoints 推导"
+    },
+    "detail": { "type": "string" },
+    "checkpoints": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "description": "对齐 verification-result 的 checkpoint id" },
+          "status": { "enum": ["pending", "passed", "failed", "error", "skipped"] },
+          "evidence": { "type": "array", "items": { "type": "string" }, "description": "证据相对路径（截图等）" },
+          "detail": { "type": "string" }
+        }
+      }
+    }
+  }
+}

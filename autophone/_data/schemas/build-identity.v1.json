@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/build-identity.v1.json",
+  "title": "Device and process build identity observations",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run_id", "app", "identity_state", "identity_source", "subject_build_key", "device_observation", "match", "subject_epochs", "updated_at"],
+  "properties": {
+    "schema_version": {"const": "v1"},
+    "run_id": {"type": "string", "minLength": 1},
+    "app": {"type": "string", "minLength": 1},
+    "identity_state": {"enum": ["confirmed", "unavailable", "mismatch", "ambiguous", "version_only"]},
+    "identity_source": {"enum": ["uds_info_plist", "frida_bundle", "combined", "unavailable"]},
+    "subject_build_key": {"type": ["string", "null"]},
+    "device_observation": {"type": ["object", "null"], "additionalProperties": true},
+    "match": {"type": "object", "additionalProperties": true},
+    "subject_epochs": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
+    "updated_at": {"type": "string", "format": "date-time"}
+  }
+}

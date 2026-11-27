@@ -1,0 +1,16 @@
+{
+  "schema_version": "ui-prototype-plan/v1",
+  "product_type": "food-ordering",
+  "platform": "mobile",
+  "screens": [
+    {
+      "id": "home",
+      "purpose": "选择口味并保存",
+      "sections": [
+        "preferences",
+        "actions"
+      ]
+    }
+  ],
+  "flows": []
+}

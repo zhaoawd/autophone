@@ -1,0 +1,14 @@
+schema_version: v1
+app: food_ordering
+product_key: food_ordering
+bundle_id: com.autophone.foodorderingdemo.v2
+display_name: Food Ordering
+env: verification
+lifecycle: active
+build_label: 1.0.0-bld-14282f675363
+trial_data_isolation: isolated
+reset: relaunch
+capabilities:
+  ax:
+    enabled: true
+    backend: frida_inproc

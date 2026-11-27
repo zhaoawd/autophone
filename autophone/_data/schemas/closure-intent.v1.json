@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "closure-intent.v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run_id", "device", "version", "closure_state", "recovery_state", "finalization_state", "frozen_inputs", "terminal_candidate", "terminal_sha256", "record_sha256"],
+  "properties": {
+    "reset_receipt": {"$ref": "reset-receipt.v0.json"},
+    "world_identity": {"$ref": "run-world-identity.v0.json"},
+    "schema_version": {"const": "closure-intent/v1"},
+    "run_id": {"type": "string", "minLength": 1},
+    "device": {"type": "string", "minLength": 1},
+    "version": {"type": "integer", "minimum": 0},
+    "closure_state": {"enum": ["open", "frozen"]},
+    "recovery_state": {"enum": ["not_required", "pending", "running", "complete", "failed"]},
+    "finalization_state": {"enum": ["pending", "running", "complete", "failed"]},
+    "frozen_inputs": {"type": ["object", "null"]},
+    "collection_checkpoints": {"type": "object"},
+    "expected_reset_axes": {"type": "array", "uniqueItems": true,
+                            "items": {"enum": ["device", "fixture"]}},
+    "assignment": {
+      "type": "object", "additionalProperties": false,
+      "required": ["assignment_id", "attempt_no", "fencing", "rig_id", "generation"],
+      "properties": {
+        "assignment_id": {"type": "string", "minLength": 1},
+        "attempt_no": {"type": "integer", "minimum": 1},
+        "fencing": {"type": "integer", "minimum": 1},
+        "rig_id": {"type": "string", "minLength": 1},
+        "generation": {"type": "integer", "minimum": 0}
+      }
+    },
+    "terminal_candidate": {"type": ["object", "null"]},
+    "terminal_sha256": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
+    "record_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

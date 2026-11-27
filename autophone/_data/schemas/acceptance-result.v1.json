@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/acceptance-result.v1.json",
+  "title": "PlatformAcceptanceResult",
+  "description": "一次平台自身活机验收的聚合裁决与子检查证据。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "acceptance_id",
+    "app",
+    "device",
+    "status",
+    "checks",
+    "started_at",
+    "ended_at",
+    "artifacts"
+  ],
+  "properties": {
+    "schema_version": { "const": "v1" },
+    "acceptance_id": { "type": "string", "minLength": 1 },
+    "app": { "type": "string", "minLength": 1 },
+    "device": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["passed", "failed", "blocked", "error"] },
+    "started_at": { "type": "string", "format": "date-time" },
+    "ended_at": { "type": "string", "format": "date-time" },
+    "artifacts": { "const": "artifact-manifest.json" },
+    "checks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "kind", "required", "status", "detail", "evidence"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "kind": { "enum": ["probe", "run"] },
+          "required": { "type": "boolean" },
+          "status": { "enum": ["passed", "failed", "blocked", "error", "skipped"] },
+          "detail": { "type": "string" },
+          "evidence": { "type": "object" }
+        }
+      }
+    }
+  }
+}

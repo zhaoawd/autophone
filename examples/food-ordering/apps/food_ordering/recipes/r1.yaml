@@ -1,0 +1,5 @@
+id: R1
+steps:
+  - action: assert_present
+    queries: ["立即下单"]
+    wait_s: 0

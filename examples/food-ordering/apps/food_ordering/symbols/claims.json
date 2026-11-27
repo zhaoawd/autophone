@@ -1,0 +1,49 @@
+{
+  "schema_version": "v1",
+  "app": "food_ordering",
+  "claims": [
+    {
+      "id": "clm-sym-001",
+      "status": "active",
+      "kind": "symbol.locator_binding",
+      "statement": "ctrl.home.preferences binds to ax_identifier home.ai_prompt.preferences on S01_home",
+      "evidence_level": "static_hint",
+      "evidence_state": "current",
+      "provenance": {
+        "source": "l2_build_manifest"
+      },
+      "scope": {
+        "symbol_id": "ctrl.home.preferences",
+        "artifact_content_digest": "14282f675363a9d74361c9b5d24dcde461648df2a13cf9aa4488d0aad4f68d58",
+        "artifact_sha256": "14282f675363a9d74361c9b5d24dcde461648df2a13cf9aa4488d0aad4f68d58",
+        "binding_sha256": "5eda6003e5049d7c76d05dd8dd4f507cc7fb78046e393cdfab765a65ff9380bb",
+        "screen_id": "S01_home"
+      },
+      "evidence_refs": [
+        "symbols/artifacts/14282f675363.yaml"
+      ]
+    },
+    {
+      "id": "clm-sym-002",
+      "status": "active",
+      "kind": "symbol.effect_set",
+      "statement": "ctrl.home.preferences declared read-only exhaustive effects (verbs=[], completeness=exhaustive)",
+      "evidence_level": "static_hint",
+      "evidence_state": "current",
+      "provenance": {
+        "source": "l2_build_manifest"
+      },
+      "scope": {
+        "symbol_id": "ctrl.home.preferences",
+        "artifact_content_digest": "14282f675363a9d74361c9b5d24dcde461648df2a13cf9aa4488d0aad4f68d58",
+        "artifact_sha256": "14282f675363a9d74361c9b5d24dcde461648df2a13cf9aa4488d0aad4f68d58",
+        "binding_sha256": "5eda6003e5049d7c76d05dd8dd4f507cc7fb78046e393cdfab765a65ff9380bb",
+        "verbs": [],
+        "completeness": "exhaustive"
+      },
+      "evidence_refs": [
+        "symbols/artifacts/14282f675363.yaml"
+      ]
+    }
+  ]
+}

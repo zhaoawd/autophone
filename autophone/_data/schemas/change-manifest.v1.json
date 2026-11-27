@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/change-manifest.v1.json",
+  "title": "BackendChangeManifest",
+  "description": "后端/配置平台发布的变更清单。Prod 只需 key、endpoint 和 JSONPath；old/new 允许脱敏值或 hash，敏感业务数据不必进平台。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "change_id", "env", "changes"],
+  "properties": {
+    "schema_version": { "const": "v1" },
+    "change_id": { "type": "string", "minLength": 1 },
+    "env": { "type": "string", "minLength": 1 },
+    "app": { "type": "string", "minLength": 1, "description": "目标 App key；缺省由调用方指定" },
+    "build": { "type": "string", "minLength": 1, "description": "变更针对的 app build；缺省用 profile.build_label" },
+    "service": { "type": "string" },
+    "changed_at": { "type": "string", "minLength": 1 },
+    "note": { "type": "string" },
+    "changes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/change" }
+    }
+  },
+  "$defs": {
+    "change": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "一条字段变更。至少给出 data_key 或 config_key 之一；endpoints/response_paths 决定影响定位质量（§10 降级梯子）。",
+      "minProperties": 1,
+      "properties": {
+        "data_key": { "type": "string", "minLength": 1 },
+        "config_key": { "type": "string", "minLength": 1 },
+        "old": { "description": "脱敏值或 hash" },
+        "new": { "description": "脱敏值或 hash" },
+        "note": { "type": "string" },
+        "endpoints": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["method"],
+            "properties": {
+              "method": { "type": "string", "minLength": 1 },
+              "host": { "type": "string", "minLength": 1, "description": "真实 host；摄取时标准化成 host_alias" },
+              "host_alias": { "type": "string", "minLength": 1 },
+              "path_template": { "type": "string", "minLength": 1 },
+              "url": { "type": "string", "minLength": 1, "description": "给了完整 URL 时由摄取层拆成 host_alias + path_template" },
+              "response_paths": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+            }
+          }
+        }
+      }
+    }
+  }
+}

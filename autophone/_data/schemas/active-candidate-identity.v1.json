@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/active-candidate-identity.v1.json",
+  "title": "ActiveCandidateIdentity",
+  "description": "设备 Readback 的 Active Candidate Identity（设计 §6.3 草案）。它是 Device Observation，只作身份核对，不构成 UI Property Evidence；字段的 source_root_id / lineage_id 声明待裁定（§十七-9）。target_fingerprint 沿用 installed-build-observation/v1 的 sha256: 前缀写法。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "target_fingerprint",
+    "bundle_id",
+    "base_build_id",
+    "base_ipa_sha256",
+    "native_runtime_id",
+    "update_source",
+    "active_update_id",
+    "main_jsbundle_sha256",
+    "assets_tree_sha256",
+    "observed_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "active-candidate-identity/v1"
+    },
+    "target_fingerprint": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "bundle_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)+$"
+    },
+    "base_build_id": {
+      "type": "string",
+      "pattern": "^bld-[0-9a-f]{12,64}$"
+    },
+    "base_ipa_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "native_runtime_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "update_source": {
+      "enum": [
+        "embedded",
+        "ota"
+      ]
+    },
+    "active_update_id": {
+      "type": "string",
+      "pattern": "^upd-[0-9A-Za-z._-]{1,120}$"
+    },
+    "main_jsbundle_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "assets_tree_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "observed_at": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})$"
+    }
+  }
+}

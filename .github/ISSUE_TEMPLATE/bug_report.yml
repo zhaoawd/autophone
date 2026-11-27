@@ -1,0 +1,39 @@
+name: Bug Report
+description: Report a reproducible defect in Autophone CLI, Control Plane, Rig Agent, or Web Console
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before submitting, please remove any tokens, UDIDs, private URLs, or personal app data from logs and screenshots.
+  - type: input
+    id: version
+    attributes:
+      label: Commit SHA or Package Version (optional)
+      description: Share if available — run `autophone --version` or `git rev-parse --short HEAD`.
+      placeholder: "e.g. v0.1.0 or abc1234"
+    validations:
+      required: false
+  - type: input
+    id: environment
+    attributes:
+      label: Environment (OS, Python, Deployment Mode) (optional)
+      description: Share any relevant host/VM details you have on hand.
+      placeholder: "e.g. macOS 15.4 arm64, Python 3.13, single-VM local mode / PostgreSQL control plane"
+    validations:
+      required: false
+  - type: textarea
+    id: steps
+    attributes:
+      label: Minimal Steps to Reproduce
+      description: Exact CLI commands, Recipe snippet, or API calls to reproduce the issue.
+    validations:
+      required: true
+  - type: textarea
+    id: expected_actual
+    attributes:
+      label: Expected vs. Actual Behavior
+      description: Include redacted error messages, exit codes, or blocker codes.
+    validations:
+      required: true

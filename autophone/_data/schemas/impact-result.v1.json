@@ -1,0 +1,358 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/impact-result.v1.json",
+  "title": "ImpactResult",
+  "description": "一次 Impact Run 的结构化结论。每个目标要么有截图证据，要么有明确 blocker——『没到达』是合法结论，不是空白。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run_id", "app", "build", "change_id", "generated_at", "targets", "summary", "safety"],
+  "properties": {
+    "api_scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidence_type",
+        "rule_snapshot_hash",
+        "scenario"
+      ],
+      "properties": {
+        "evidence_type": {
+          "const": "controlled_api_change"
+        },
+        "rule_snapshot_hash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "scenario": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "properties": {
+            "path": {
+              "const": "impact/private/api-scenario.json"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        }
+      }
+    },
+    "schema_version": { "const": "v1" },
+    "run_id": { "type": "string", "minLength": 1 },
+    "app": { "type": "string", "minLength": 1 },
+    "build": { "type": "string", "minLength": 1 },
+    "change_id": { "type": "string", "minLength": 1 },
+    "env": { "type": "string" },
+    "generated_at": { "type": "string", "minLength": 1 },
+    "plan_ref": { "type": "string", "description": "相对 run 目录的 plan 路径" },
+    "targets": { "type": "array", "items": { "$ref": "#/$defs/target_result" } },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total", "reached", "by_verdict"],
+      "properties": {
+        "total": { "type": "integer", "minimum": 0 },
+        "reached": { "type": "integer", "minimum": 0 },
+        "by_verdict": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } },
+        "gaps": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["denied_effects", "violations"],
+      "description": "Prod 安全裁决。violations > 0 表示出现未获准写操作——红线，必须为 0。",
+      "properties": {
+        "denied_effects": { "type": "array", "items": { "type": "string" } },
+        "violations": { "type": "integer", "minimum": 0 },
+        "note": { "type": "string" }
+      }
+    },
+    "gaps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "detail"],
+        "properties": {
+          "kind": { "type": "string", "minLength": 1 },
+          "detail": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "artifact_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ocr": {
+          "$ref": "#/$defs/artifact_ref"
+        }
+      }
+    },
+    "comparison": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "reason"
+          ],
+          "properties": {
+            "status": {
+              "const": "unavailable"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "scope",
+            "before",
+            "after"
+          ],
+          "properties": {
+            "status": {
+              "const": "compared"
+            },
+            "scope": {
+              "enum": [
+                "json_paths_first_array_element",
+                "json_paths_first_array_element_consistent_complete_response_set",
+                "ocr_text_multiset_by_region",
+                "ax_leaf_structure_by_region",
+                "native_checkpoint_variant",
+                "controlled_exact_json_leaf",
+                "controlled_exact_text"
+              ]
+            },
+            "before": {
+              "$ref": "#/$defs/artifact_ref"
+            },
+            "after": {
+              "$ref": "#/$defs/artifact_ref"
+            },
+            "screen_asset": { "$ref": "#/$defs/artifact_ref" },
+            "source_selection": { "$ref": "#/$defs/artifact_ref" },
+            "build_granularity": {
+              "type": "object", "additionalProperties": false, "required": ["before", "after"],
+              "properties": {
+                "before": { "enum": ["legacy_version_tuple", "build_marker", "info_plist"] },
+                "after": { "enum": ["legacy_version_tuple", "build_marker", "info_plist"] }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "controlled_validation": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "gold",
+            "reason"
+          ],
+          "properties": {
+            "status": {
+              "const": "failed"
+            },
+            "gold": {
+              "const": false
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "gold",
+            "text_oracle"
+          ],
+          "properties": {
+            "status": {
+              "const": "pending_restoration"
+            },
+            "gold": {
+              "const": false
+            },
+            "text_oracle": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "status",
+                "channel",
+                "region",
+                "coverage_count",
+                "proof"
+              ],
+              "properties": {
+                "status": {
+                  "const": "verified"
+                },
+                "channel": {
+                  "enum": [
+                    "ax",
+                    "ocr"
+                  ]
+                },
+                "region": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "coverage_count": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "proof": {
+                  "$ref": "#/$defs/artifact_ref"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "target_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target_id", "screen_id", "verdict"],
+      "properties": {
+        "source_kind": { "const": "controlled_api_change" },
+        "controlled_validation": { "$ref": "#/$defs/controlled_validation" },
+        "target_id": { "type": "string", "minLength": 1 },
+        "binding_id": { "type": "string" },
+        "screen_id": { "type": "string", "minLength": 1 },
+        "variant_selector": { "type": "object", "additionalProperties": { "type": ["string", "number", "boolean", "null"] } },
+        "regions": { "type": "array", "items": { "type": "string" } },
+        "confidence": { "enum": ["observed", "correlated", "causal", "stale"] },
+        "verdict": {
+          "enum": [
+            "api_and_ui_changed",
+            "api_changed_ui_unchanged",
+            "api_unchanged_ui_changed",
+            "cached_or_not_refreshed",
+            "not_reached",
+            "inconclusive"
+          ]
+        },
+        "api": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "接口侧证据（脱敏摘要，raw body 不入库）",
+          "properties": {
+            "endpoint_key": { "type": "string" },
+            "observed": { "type": "boolean", "description": "该 endpoint 是否在本次 run 被采到" },
+            "changed": { "type": ["boolean", "null"], "description": "目标 response_path 相对基线是否变化；无基线时 null" },
+            "changed_paths": { "type": "array", "items": { "type": "string" } },
+            "status": { "type": ["integer", "null"] },
+            "note": { "type": "string" }
+          }
+        },
+        "ui": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "页面侧证据：语义（OCR/AX）为业务结论，视觉 diff 首期只作 advisory",
+          "properties": {
+            "reached": { "type": "boolean" },
+            "semantic_changed": { "type": ["boolean", "null"] },
+            "ax_changed": { "type": ["boolean", "null"] },
+            "ax_changes": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["region", "kind", "fields"], "properties": {"region": {"type": "string"}, "kind": {"enum": ["added", "removed", "modified"]}, "fields": {"type": "array", "items": {"enum": ["path", "label", "role", "traits", "enabled", "value", "identifier"]}}}}},
+            "visual_changed": { "type": ["boolean", "null"] },
+            "visual_score": { "type": ["number", "null"] },
+            "visual_advisory": { "type": "boolean" },
+            "changed_regions": { "type": "array", "items": { "type": "string" } },
+            "masked_regions": { "type": "array", "items": { "type": "string" } },
+            "note": { "type": "string" }
+          }
+        },
+        "comparison_sources": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "baseline_manifest",
+            "before",
+            "after"
+          ],
+          "properties": {
+            "baseline_manifest": {
+              "$ref": "#/$defs/artifact_ref"
+            },
+            "before": {
+              "$ref": "#/$defs/artifact_ref"
+            },
+            "after": {
+              "$ref": "#/$defs/artifact_ref"
+            }
+          }
+        },
+        "variant_comparison": { "$ref": "#/$defs/comparison" },
+        "api_comparison": {
+          "$ref": "#/$defs/comparison"
+        },
+        "semantic_comparison": {
+          "$ref": "#/$defs/comparison"
+        },
+        "frames": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "baseline": { "type": ["string", "null"] },
+            "current": { "type": ["string", "null"] },
+            "diff": { "type": ["string", "null"] }
+          }
+        },
+        "evidence_runs": { "type": "array", "items": { "type": "string" } },
+        "blocker": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind"],
+          "properties": {
+            "kind": { "type": "string", "minLength": 1 },
+            "detail": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

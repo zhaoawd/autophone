@@ -1,0 +1,61 @@
+site_name: Autophone
+site_description: Deterministic iOS VM automation, device control plane, and regression testing built on vphone-cli
+site_url: https://zhaoawd.github.io/autophone/
+repo_name: zhaoawd/autophone
+repo_url: https://github.com/zhaoawd/autophone
+docs_dir: docs
+theme:
+  name: material
+  language: zh
+  features:
+    - navigation.sections
+    - navigation.expand
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+markdown_extensions:
+  - tables
+  - admonition
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+nav:
+  - 首页: index.md
+  - 快速开始:
+      - 零 VM 与单机上手: getting-started/quickstart.md
+      - Quickstart (English): getting-started/quickstart.en.md
+      - 环境与验证矩阵: getting-started/environment-matrix.md
+      - Environment Matrix (English): getting-started/environment-matrix.en.md
+      - 常见问答（FAQ）: getting-started/faq.md
+      - FAQ (English): getting-started/faq.en.md
+      - 核心分发安装与验证: public-core.md
+  - 使用指南:
+      - 设备控制台与嵌入: guides/device-console.md
+      - Device Console (English): guides/device-console.en.md
+      - 系统定位与路线回放: guides/location.md
+      - System Location (English): guides/location.en.md
+      - IPA 构建库与录制回放: guides/packages-and-recording.md
+      - Packages & Recording (English): guides/packages-and-recording.en.md
+      - 编写用例与 Recipe: guides/authoring-cases.md
+      - Authoring Cases (English): guides/authoring-cases.en.md
+      - 多 VM 控制面部署: guides/multi-vm-control-plane.md
+      - Multi-VM Control Plane (English): guides/multi-vm-control-plane.en.md
+      - 公开 Entry Point 扩展指南: guides/extensions.md
+      - Entry Point Extensions (English): guides/extensions.en.md
+  - 核心概念:
+      - 术语与概念模型: concepts/terminology.md
+      - 回归运行期契约: concepts/runtime-contract.md
+      - App 受控操作语言全局蓝图: concepts/app-operation-language.md
+      - 统一 App 符号头文件最小契约: concepts/app-symbols-v1.md
+      - Guest 免侵入 AX 与双通道分治: concepts/guest-ax-observation.md
+      - 受控操作与符号绑定分阶段任务书: concepts/app-symbols-v1-plan.md
+      - 符号绑定与 Guest AX 实测验证报告: concepts/app-symbols-v1-validation-report.md
+      - 定位能力域规范: domains/location.md
+      - ADR-0005 统一定位会话: adr/0005-unify-location-sessions-keep-target-runtimes-separate.md
+  - 自动生成参考:
+      - Recipe Verb 动作手册: reference/verbs.md
+      - CLI 命令参考: reference/cli.md
+      - 核心 JSON Schema 字典: reference/schemas.md
+      - HTTP API 接口目录: reference/http-api.md

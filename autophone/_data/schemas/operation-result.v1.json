@@ -1,0 +1,592 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/operation-result.v1.json",
+  "title": "OperationResult",
+  "description": "type=operation 的 run 详情产物（与 verification-result 对称）。记录跑了哪个操作、解析后的入参、逐步状态与结论。无 checkpoint/断言——操作只回答“做成了没”。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "app",
+    "operation",
+    "status",
+    "steps"
+  ],
+  "properties": {
+    "failure_stage": {
+      "$ref": "failure-context.v1.json#/$defs/failureStage"
+    },
+    "failed_definition": {
+      "$ref": "failure-context.v1.json#/$defs/failedDefinition",
+      "description": "明确定位且有版本身份的失败定义；未知时不继承外层执行对象，不表示已确认资产缺陷。"
+    },
+    "schema_version": {
+      "const": "v1"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "app": {
+      "type": "string",
+      "minLength": 1
+    },
+    "build": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "本次 operation run 对应的 app build_label；screen checkpoint telemetry 按 build 聚合"
+    },
+    "store_context": {
+      "$ref": "#/$defs/storeContextSnapshot",
+      "description": "本次操作明确使用的门店目录快照。"
+    },
+    "operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "id",
+        "revision"
+      ],
+      "description": "本 run 钉住的操作稳定标识 + 版本（“做成的是哪一版”）",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "summary": {
+      "type": "string"
+    },
+    "args": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "解析后的入参（已回填默认值、过 param 契约）"
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "index",
+          "text",
+          "status"
+        ],
+        "properties": {
+          "index": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "text": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "passed",
+              "failed",
+              "skipped"
+            ]
+          },
+          "detail": {
+            "type": "string"
+          },
+          "screen_checkpoint": {
+            "$ref": "#/$defs/screen_checkpoint"
+          }
+        }
+      }
+    },
+    "action_trace": {
+      "type": "array",
+      "description": "typed-IR 动作轨迹；action_id 与 subject_epoch_ref 用于关联同一动作窗口的 API Observation。旧执行器可留空字符串。",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action",
+          "action_id",
+          "subject_epoch_ref",
+          "ok",
+          "elapsed_ms",
+          "recorded_at"
+        ],
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "action_id": {
+            "type": "string"
+          },
+          "subject_epoch_ref": {
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "elapsed_ms": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "recorded_at": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "location_session": {
+      "$ref": "#/$defs/locationSessionEvidence",
+      "description": "本次操作使用统一 Location Session 注入定位时的证据（spec + target 快照 + 投递回执）。不注入定位的操作没有此字段。"
+    },
+    "status": {
+      "enum": [
+        "pending_execution",
+        "passed",
+        "failed",
+        "blocked",
+        "error",
+        "aborted"
+      ],
+      "description": "pending_execution=执行器未接，仅解析校验通过；blocked=已确认前置条件缺口，具体原因见 blocker；aborted=run 级中止信号在启动前或 typed-IR 逐步边界被读到，执行协作停下，detail 为中止原因，已执行步骤的副作用不回滚"
+    },
+    "blocker": {
+      "$ref": "#/$defs/blocker",
+      "description": "status=blocked 时的结构化前置条件缺口。"
+    },
+    "detail": {
+      "type": "string"
+    },
+    "step_args_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "step_index",
+        "operation",
+        "args"
+      ],
+      "description": "typed-IR 合成执行器的自调用传参审计（phase2-regression §10.10 窄例外）：注册 steps 恰好是一条不带参数的自调用时，经参数契约校验的 RunSpec operation.with 参数传给该步。没有发生传参的 run 没有此字段。",
+      "properties": {
+        "source": {
+          "const": "with"
+        },
+        "step_index": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "operation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "args": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "实际传入的参数；落盘时与 args 同一规则掩码敏感值"
+        }
+      }
+    },
+    "source": {
+      "type": "string"
+    },
+    "replay_speed": {
+      "enum": [
+        0.5,
+        1.0,
+        1.5,
+        2.0,
+        2.5,
+        3.0,
+        3.5,
+        4.0
+      ],
+      "description": "本 run 的 typed-IR 回放倍速（缺省=1.0 原速；旧 run 无此字段按 1.0 看待）。转正门只把 1.0 的 run 计入连续 passed——倍速回放仅供调试/取数，不当稳定性证据（见 record-replay-design §倍速回放）。与 run-spec.operation.replay_speed 同 enum：持久化的转正真源必须和入参一样严，挡住手改/异常产物写非档位值后被静默当「非 1x、对闸不可见」吞掉"
+    },
+    "draft_id": {
+      "type": "string",
+      "description": "若本 run 在验证一条 operation draft（转正漏斗），记其 id（如 OP12）——转正闸据此按 draft 统计连续 passed（与 verification-result 对称，见 record-replay-design §五）"
+    },
+    "review_status": {
+      "enum": [
+        "approved",
+        "rejected",
+        "needs_changes"
+      ],
+      "description": "人审结论；转正闸要求 approved（与验证单同一道人审门）"
+    },
+    "reviewed_by": {
+      "type": "string"
+    },
+    "review_note": {
+      "type": "string"
+    },
+    "reviewed_at": {
+      "type": "string"
+    },
+    "reviews": {
+      "type": "array",
+      "description": "人审事件流水（每次 review 追加一条），最新结论冗余进顶层 review_status 等字段",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "reviewer",
+          "reviewed_at"
+        ],
+        "properties": {
+          "status": {
+            "enum": [
+              "approved",
+              "rejected",
+              "needs_changes"
+            ]
+          },
+          "reviewer": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "reviewed_at": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "blocked"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "blocker"
+        ]
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "blocker"
+        ]
+      },
+      "then": {
+        "properties": {
+          "status": {
+            "const": "blocked"
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "blocker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scope",
+        "code",
+        "recovery"
+      ],
+      "properties": {
+        "scope": {
+          "enum": [
+            "asset",
+            "rig",
+            "capability",
+            "fixture"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "capability": {
+          "type": "string",
+          "minLength": 1
+        },
+        "recovery": {
+          "type": "string"
+        },
+        "evidence_ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "locationSessionEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "spec",
+        "target",
+        "receipt"
+      ],
+      "description": "内层三块是 location_contract 各 dataclass 的 as_dict 原样快照；契约真源在那边，这里只固定三块都必须在场，不重复定义字段。",
+      "properties": {
+        "spec": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "LocationSessionSpec.as_dict"
+        },
+        "target": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": true,
+          "description": "target Adapter 的 snapshot.as_dict；Adapter 未打开成功时为 null"
+        },
+        "receipt": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": true,
+          "description": "本次投递回执；未投递成功时为 null"
+        }
+      }
+    },
+    "storeContextSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "catalog_snapshot_id",
+        "identity",
+        "brand",
+        "store_code",
+        "name",
+        "short_name",
+        "address",
+        "market_name",
+        "market_code",
+        "city_name",
+        "national_city_code",
+        "status",
+        "store_type",
+        "coordinates",
+        "tolerance_m"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "store-context.v1"
+        },
+        "catalog_snapshot_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "identity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "brand": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "store_code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string"
+        },
+        "short_name": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        },
+        "market_name": {
+          "type": "string"
+        },
+        "market_code": {
+          "type": "string"
+        },
+        "city_name": {
+          "type": "string"
+        },
+        "national_city_code": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "store_type": {
+          "type": "string"
+        },
+        "coordinates": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "source_store",
+            "source_map"
+          ],
+          "properties": {
+            "source_store": {
+              "$ref": "#/$defs/storeCoordinate"
+            },
+            "source_map": {
+              "$ref": "#/$defs/storeCoordinate"
+            }
+          }
+        },
+        "tolerance_m": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    },
+    "storeCoordinate": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "lng",
+            "lat"
+          ],
+          "properties": {
+            "lng": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            },
+            "lat": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            }
+          }
+        }
+      ]
+    },
+    "screen_checkpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "expected",
+        "reason"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "passed",
+            "failed"
+          ]
+        },
+        "expected": {
+          "type": "string"
+        },
+        "matched": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reason": {
+          "type": "string"
+        },
+        "shot": {
+          "type": "string"
+        },
+        "ax_evidence": {
+          "type": "object",
+          "required": [
+            "status"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "captured",
+                "unavailable"
+              ]
+            },
+            "path": {
+              "type": "string"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "reason": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "tokens_hit": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tokens_missed": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "forbid_hit": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "只出遥测的行：期望签名 forbid 命中的 token"
+        },
+        "screen_status": {
+          "type": "string",
+          "description": "只出遥测的行：期望 screen 在资产里的 status（如 draft）。fail-fast 行与历史行不带此字段"
+        },
+        "enforcement": {
+          "enum": [
+            "telemetry_only"
+          ],
+          "description": "telemetry_only=该 checkpoint 只出遥测，匹配结果不改变步骤与 run 状态（screen-skeleton-context §十一.6）。缺省=fail-fast"
+        },
+        "matched_status": {
+          "type": "string",
+          "description": "只出遥测的行：命中签名在资产里的 status"
+        },
+        "error": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

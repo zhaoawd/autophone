@@ -1,0 +1,12 @@
+# 定位模拟点注册表（seed，tracked，只读）。
+#
+# 这里仅保留自定义定位模拟点与常用地址点（默认为空列表）。
+#
+# 结构：id/kind/label/app/city/lat/lng。
+# - kind=custom：自定义模拟点。
+# - kind=delivery：常用目标地址点。
+# - 坐标默认使用 GCJ-02。
+#
+# 本机可变收藏点写到 config/location-points.local.yaml（untracked overlay，同结构）；
+# id 与 seed 严格不相交，重复即 fail-closed（不做隐式覆盖）。
+points: []

@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/knowledge-claims.v1.json",
+  "title": "Knowledge claim source-of-truth document",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "app", "claims"],
+  "properties": {
+    "schema_version": {"const": "v1"},
+    "app": {"type": "string", "minLength": 1},
+    "claims": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/claim"}
+    }
+  },
+  "$defs": {
+    "claim": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "id", "status", "kind", "statement", "scope", "evidence_refs",
+        "evidence_level", "evidence_state", "provenance"
+      ],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "status": {"enum": ["draft", "active", "deprecated", "archived"]},
+        "kind": {"type": "string", "minLength": 1},
+        "statement": {"type": "string", "minLength": 1},
+        "operation": {"type": "string", "minLength": 1},
+        "scope": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "subject_build_key": {"type": ["string", "null"]}
+          }
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        },
+        "evidence_level": {
+          "enum": [
+            "static_hint", "observed", "repeated",
+            "controlled_contrast", "independent_readback"
+          ]
+        },
+        "evidence_state": {"enum": ["current", "stale", "contradicted", "missing"]},
+        "provenance": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["source"],
+          "properties": {
+            "source": {"type": "string", "minLength": 1}
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,40 @@
+[project]
+name = "autophone-plugin-template"
+version = "0.1.0"
+description = "Minimal third-party entry-point provider template for Autophone Public Core"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+    "autophone-kernel>=0.1.0",
+    "autophone-rig>=0.1.0",
+]
+
+# IMPORTANT:
+# `autophone.run_admission`, `autophone.executor`, and `autophone.device_session`
+# enforce exact cardinality == 1 (fail-closed if 0 or >= 2 providers are installed).
+#
+# - In a minimal `autophone-rig` deployment WITHOUT `autophone-domain`, keep these
+#   entry points enabled so `autophone.rig.plugins` auto-discovers your provider.
+# - When installing alongside `autophone-domain` in the same Python environment,
+#   comment out or remove the overlapping `[project.entry-points.*]` sections below
+#   and pass explicit factory overrides instead:
+#     autophone-rig-agent \
+#       --executor-factory autophone_plugin_template.executor:create_executor \
+#       --device-session-factory autophone_plugin_template.device_session:create_device_session_ops
+
+[project.entry-points."autophone.run_admission"]
+template_admission = "autophone_plugin_template.admission:validate_run_admission"
+
+[project.entry-points."autophone.executor"]
+template_executor = "autophone_plugin_template.executor:create_executor"
+
+[project.entry-points."autophone.device_session"]
+template_device_session = "autophone_plugin_template.device_session:create_device_session_ops"
+
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/autophone_plugin_template"]

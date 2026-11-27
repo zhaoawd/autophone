@@ -1,0 +1,247 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "screen-asset.v1.json",
+  "title": "Screen skeleton asset",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["meta", "screens"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["schema_version", "build"],
+      "properties": {
+        "schema_version": { "const": 1 },
+        "build": { "type": "string", "minLength": 1 },
+        "app": { "type": "string", "minLength": 1 },
+        "title": { "type": "string" },
+        "total": { "type": "integer", "minimum": 0 },
+        "next_seq": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "screens": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/screen" }
+    }
+  },
+  "$defs": {
+    "status": {
+      "enum": ["draft", "active", "deprecated", "archived"]
+    },
+    "where": {
+      "enum": ["top", "bottom", "left-rail", "right-rail", "content"]
+    },
+    "anchor": {
+      "oneOf": [
+        { "type": "string", "minLength": 1 },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["text"],
+          "properties": {
+            "text": { "type": "string", "minLength": 1 },
+            "where": { "$ref": "#/$defs/where" },
+            "kind": { "type": "string", "minLength": 1 }
+          }
+        }
+      ]
+    },
+    "screen": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "status"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "display_name": { "type": "string", "minLength": 1 },
+        "description": { "type": "string" },
+        "status": { "$ref": "#/$defs/status" },
+        "revision": { "type": "integer", "minimum": 1 },
+        "must": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/anchor" },
+          "default": []
+        },
+        "forbid": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/anchor" },
+          "default": []
+        },
+        "any_of": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["min_hits", "tokens"],
+          "properties": {
+            "min_hits": { "type": "integer", "minimum": 0 },
+            "tokens": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "variant_checks": {
+          "type": "object",
+          "additionalProperties": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "source",
+                  "region",
+                  "values"
+                ],
+                "properties": {
+                  "source": {
+                    "enum": ["native_ui_text", "ax_ui_text"]
+                  },
+                  "region": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "values": {
+                    "type": "object",
+                    "minProperties": 1,
+                    "additionalProperties": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "all",
+                        "none"
+                      ],
+                      "properties": {
+                        "all": {
+                          "type": "array",
+                          "minItems": 1,
+                          "items": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        },
+                        "none": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "source",
+                  "values"
+                ],
+                "properties": {
+                  "source": {
+                    "const": "core_location_authorization"
+                  },
+                  "values": {
+                    "type": "object",
+                    "minProperties": 1,
+                    "additionalProperties": {
+                      "type": "array",
+                      "minItems": 1,
+                      "items": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 4
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "regions": {
+          "type": "object",
+          "additionalProperties": {
+            "oneOf": [
+              {
+                "type": "array",
+                "minItems": 4,
+                "maxItems": 4,
+                "items": { "type": "number" }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["rect"],
+                "properties": {
+                  "rect": {
+                    "type": "array",
+                    "minItems": 4,
+                    "maxItems": 4,
+                    "items": { "type": "number" }
+                  },
+                  "display_name": { "type": "string", "minLength": 1 },
+                  "description": { "type": "string" },
+                  "volatile": { "type": "boolean" },
+                  "sensitive": { "type": "boolean" }
+                }
+              }
+            ]
+          },
+          "description": "命名区域，归一化 [nx0, ny0, nx1, ny1]；也可用 {rect, volatile, sensitive} 标注动态或敏感遮罩区；视觉 diff 对两者都先遮罩；S3/S4 消费，不参与 S0 签名匹配"
+        },
+        "blocking_overlays": {
+          "type": "array",
+          "description": "遮挡当前屏动作的弹层声明；runner 在寻址失败/不收敛后探测，命中则执行 dismiss typed-IR 并重试原动作一次。",
+          "items": { "$ref": "#/$defs/blocking_overlay" },
+          "default": []
+        }
+      }
+    },
+    "blocking_overlay": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "detect", "dismiss"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "detect": {
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "properties": {
+            "ocr_text": {
+              "oneOf": [
+                { "type": "string", "minLength": 1 },
+                { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 }
+              ]
+            },
+            "text": {
+              "oneOf": [
+                { "type": "string", "minLength": 1 },
+                { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 }
+              ]
+            },
+            "ax_text": {
+              "oneOf": [
+                { "type": "string", "minLength": 1 },
+                { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 }
+              ]
+            }
+          }
+        },
+        "dismiss": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/step" }
+        }
+      }
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": true,
+      "oneOf": [
+        { "required": ["action"], "properties": { "action": { "type": "string", "minLength": 1 } } },
+        { "required": ["operation"], "properties": { "operation": { "type": "string", "minLength": 1 } } }
+      ]
+    }
+  }
+}

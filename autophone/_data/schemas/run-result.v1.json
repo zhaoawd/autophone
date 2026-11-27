@@ -1,0 +1,1359 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/run-result.v1.json",
+  "title": "RunResult",
+  "description": "一次 run 的执行结果（执行期）。planes 用 mode（策略）+ verdict（裁决）两层。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "type",
+    "app",
+    "device",
+    "status",
+    "planes",
+    "timestamps"
+  ],
+  "properties": {
+    "failure_stage": {
+      "$ref": "failure-context.v1.json#/$defs/failureStage"
+    },
+    "failed_definition": {
+      "$ref": "failure-context.v1.json#/$defs/failedDefinition",
+      "description": "明确定位且有版本身份的失败定义；未知时不继承外层执行对象，不表示已确认资产缺陷。"
+    },
+    "candidate_activation": {
+      "$ref": "candidate-activation-result.v1.json"
+    },
+    "evidence_kind": {
+      "enum": [
+        "device",
+        "host_test"
+      ]
+    },
+    "assignment_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "attempt_no": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "fencing": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "identity": {
+      "type": "object"
+    },
+    "captures": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object"
+      }
+    },
+    "baseline_ref": {
+      "type": "object",
+      "required": [
+        "path",
+        "sha256"
+      ]
+    },
+    "error": {
+      "type": "object",
+      "required": [
+        "code",
+        "message"
+      ]
+    },
+    "calibration_record": {
+      "type": "object",
+      "required": [
+        "run_dir",
+        "manifest_sha256"
+      ]
+    },
+    "world_identity": {
+      "$ref": "run-world-identity.v0.json"
+    },
+    "schema_version": {
+      "const": "v1"
+    },
+    "autophone_version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "run 执行时的 autophone 发布版本"
+    },
+    "commit": {
+      "type": "string",
+      "minLength": 1,
+      "description": "run 执行时的 autophone commit"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "type": {
+      "enum": [
+        "regression",
+        "verification",
+        "operation",
+        "explore",
+        "visual_calibration"
+      ]
+    },
+    "app": {
+      "type": "string",
+      "minLength": 1
+    },
+    "app_version": {
+      "type": "string",
+      "description": "run 起始时读 Info.plist 得到的被测包版本"
+    },
+    "build_label": {
+      "type": "string",
+      "minLength": 1,
+      "description": "run 提交时冻结的 App Profile 构建标签；与 package.profile_build_label 同源"
+    },
+    "env": {
+      "type": "string",
+      "description": "如 uat / prod"
+    },
+    "device": {
+      "type": "string",
+      "minLength": 1
+    },
+    "ax_backend": {
+      "enum": [
+        "frida_inproc",
+        "guest_axruntime",
+        null
+      ],
+      "description": "Run 启动期从 App Profile 冻结的单一 AX 观测后端（D8）；未启用或旧 Run 可为 null 或省略。"
+    },
+    "store_context": {
+      "$ref": "#/$defs/storeContextSnapshot",
+      "description": "run 提交时由门店目录冻结的规范门店上下文。"
+    },
+    "package": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "device_version",
+        "profile_build_label"
+      ],
+      "description": "run 提交时冻结的包/构建快照；registry_build_ref 是 Host 侧选择，device_build_observation 是设备侧观测，二者的匹配状态单独记在 build_identity_match。default_* 表示 Registry 的默认选择；旧字段 active_* / device_version 仅作兼容读取输入，新代码不再写入。字段允许 null 以兼容旧 run 与离线设备",
+      "anyOf": [
+        {
+          "required": [
+            "default_slot",
+            "default_version",
+            "default_sha256"
+          ]
+        },
+        {
+          "required": [
+            "active_slot",
+            "active_version",
+            "active_sha256"
+          ]
+        }
+      ],
+      "properties": {
+        "default_slot": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "default_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "default_sha256": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "active_slot": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "active_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "active_sha256": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "short_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "build_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "device_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "profile_build_label": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "registry_build_ref": {
+          "oneOf": [
+            {
+              "$ref": "registry-build-ref.v1.json"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "run 提交时从当前 Target 安装回执冻结的 Build 身份；提交后不受后续入库/安装影响"
+        },
+        "device_build_observation": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": false,
+          "required": [
+            "bundle_id",
+            "short_version",
+            "build_version",
+            "observed_at"
+          ],
+          "properties": {
+            "bundle_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "short_version": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "build_version": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "pid": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "observed_at": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "description": "设备侧实际观测；缺失表示未采集，不表示匹配"
+        },
+        "build_identity_match": {
+          "enum": [
+            "match",
+            "mismatch",
+            "not_observed",
+            null
+          ],
+          "description": "比较基准（comparison_basis）与设备证据的匹配状态。match 须有 build marker 字节相等的证据（build_marker_comparison=observed），或对 source_revision.kind=unknown 的 Build 有 Info.plist 字节相等且在 Package Store 内唯一的证据（comparison_granularity=info_plist，）；仅版本号相等时为 not_observed；无证据时绝不默认 match"
+        },
+        "comparison_basis": {
+          "enum": [
+            "installed_build_ref",
+            "candidate_build_ref",
+            null
+          ],
+          "description": "build_identity_match 的比较基准；candidate_build_ref 表示 Run 提交时冻结的候选基座 Build，installed_build_ref 表示提交时已安装的 Build。null 表示没有可用基准（缺失、字段不全或回执 verified=false）"
+        },
+        "comparison_build_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "比较基准对应的 build_id"
+        },
+        "comparison_granularity": {
+          "enum": [
+            "build_marker",
+            "info_plist",
+            "version",
+            null
+          ],
+          "description": "判定 match 或 mismatch 所依据的证据粒度：build_marker 为构建标记字节比较，info_plist 为设备 Info.plist 与基准 IPA 内 Info.plist 字节比较，version 为 short_version 与 build_version 比较。not_observed 时为 null"
+        },
+        "comparison_reason": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "未判 match 时的原因，例如 installed_build_ref_missing、build_marker_unverified:…、device_version_tuple_mismatch；info_plist 粒度的原因有 installed_info_plist_mismatch、info_plist_ambiguous、info_plist_uniqueness_unverified、info_plist_basis_missing、info_plist_basis_unavailable:…、info_plist_basis_source_revision_not_unknown、info_plist_basis_inconsistent、info_plist_not_compared:…"
+        },
+        "version_comparison": {
+          "enum": [
+            "match",
+            "mismatch",
+            "not_observed",
+            null
+          ],
+          "description": "设备 Info.plist 版本号与比较基准的比较结果；版本号相同的不同 Build 无法由此区分，match 不单独构成 build_identity_match=match"
+        },
+        "build_marker_comparison": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "world-identity.json subject_build_ref.state 的投影：observed 为 marker 字节相等，mismatch 为不等，partial/unprobed 为不可判；not_recorded 表示无 world identity，not_comparable 表示其冻结的 build_id 与比较基准不同"
+        },
+        "snapshot_source": {
+          "enum": [
+            "run_submission",
+            "legacy_result",
+            "unknown"
+          ]
+        },
+        "snapshot_unknown_reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "status": {
+      "enum": [
+        "passed",
+        "failed",
+        "error",
+        "blocked",
+        "pending",
+        "partial"
+      ],
+      "description": "pending：仍有 mode=required 面 verdict=pending（如 telemetry readback 中）"
+    },
+    "blocker": {
+      "$ref": "#/$defs/blocker",
+      "description": "Run 在执行前或执行中遇到的结构化阻塞原因；不表示产品断言失败。"
+    },
+    "abort_reason": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Run 中止（status=blocked）时的中止原因原文，与引擎 result.json 的 abort_reason 相同；中止后未执行的 Case 在 cases[] 中记为 blocked 并带 blocker"
+    },
+    "failure_reasons": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "product",
+          "asset"
+        ]
+      },
+      "uniqueItems": true,
+      "description": "status=failed 时的机器路由原因；product 与 asset 可同时存在"
+    },
+    "rig": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "执行前在同一把 ScreenLock 内采集的 VM / App / Frida / 健康守护快照",
+      "required": [
+        "vm_uds",
+        "app_ui",
+        "frida",
+        "health_guard"
+      ],
+      "properties": {
+        "vm_uds": {
+          "$ref": "#/$defs/rigEvidence"
+        },
+        "app_ui": {
+          "$ref": "#/$defs/rigEvidence"
+        },
+        "frida": {
+          "$ref": "#/$defs/rigEvidence"
+        },
+        "health_guard": {
+          "$ref": "#/$defs/rigEvidence"
+        }
+      }
+    },
+    "planes": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "ui": {
+          "$ref": "#/$defs/planeResult"
+        },
+        "function": {
+          "$ref": "#/$defs/planeResult"
+        },
+        "api": {
+          "$ref": "#/$defs/apiPlaneResult"
+        },
+        "telemetry": {
+          "$ref": "#/$defs/planeResult"
+        }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "description": "操作回放的逐步日志（仅 type=operation/verification 时出现）",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "label",
+          "state"
+        ],
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "步骤的可读标签"
+          },
+          "state": {
+            "enum": [
+              "todo",
+              "pass",
+              "done",
+              "manual",
+              "failed"
+            ],
+            "description": "步骤状态"
+          },
+          "note": {
+            "type": "string",
+            "description": "步骤详细信息或错误描述"
+          },
+          "time": {
+            "type": "string",
+            "description": "步骤执行时间戳"
+          }
+        }
+      }
+    },
+    "cases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "passed",
+              "failed",
+              "error",
+              "blocked",
+              "pending",
+              "skipped"
+            ]
+          },
+          "item": {
+            "type": "string",
+            "description": "用例名（来自 cases YAML）；前端实时视图 / 摘要显示用"
+          },
+          "module": {
+            "type": "string",
+            "description": "用例所属模块"
+          },
+          "group": {
+            "type": "string",
+            "description": "分组批跑时所属的串行执行组"
+          },
+          "duration_ms": {
+            "type": "number",
+            "minimum": 0,
+            "description": "本用例执行耗时（毫秒）"
+          },
+          "failure_stage": {
+            "$ref": "failure-context.v1.json#/$defs/failureStage"
+          },
+          "failed_definition": {
+            "$ref": "failure-context.v1.json#/$defs/failedDefinition",
+            "description": "明确定位且有版本身份的失败定义；未知时不继承外层执行对象，不表示已确认资产缺陷。"
+          },
+          "exec_via": {
+            "enum": [
+              "recipe",
+              "script",
+              ""
+            ],
+            "description": "执行路径：typed-IR recipe 或手写 step-script"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "run 启动时钉住的用例内容版本（cases YAML 的 revision 快照）；verification checkpoint 无此字段"
+          },
+          "binding_sha256": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "本用例执行时冻结的不可变 app-symbols.v1 文件原始字节 SHA-256；未使用符号绑定时为 null 或省略。"
+          },
+          "draft_recipe_identity": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "case_revision",
+              "reserved_external_id",
+              "draft_recipe_sha256"
+            ],
+            "description": "显式草稿 recipe 试跑实际执行的资产身份；转正证据必须与当前身份完全一致",
+            "properties": {
+              "case_revision": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "reserved_external_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "minLength": 1
+              },
+              "draft_recipe_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          },
+          "recipe_identity": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source",
+              "path",
+              "recipe_sha256",
+              "case_revision",
+              "reserved_external_id"
+            ],
+            "description": "用例实际执行的 Recipe 身份。执行前读取 Recipe 文件一次，执行后核对 Runner 实际执行的 steps；核对通过时 recipe_sha256 为该文件内容摘要，否则为 null 并给出 unverified_reason",
+            "properties": {
+              "source": {
+                "enum": [
+                  "live",
+                  "draft"
+                ]
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "description": "相对 App 目录的 Recipe 文件路径；Recipe 目录不在 App 目录内时为 <outside-app>/ 前缀的占位路径，不记录宿主路径"
+              },
+              "recipe_sha256": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "binding_sha256": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^[0-9a-f]{64}$",
+                "description": "与该 Recipe 执行身份一同冻结的 app-symbols.v1 原始字节 SHA-256；未使用符号绑定时为 null 或省略。"
+              },
+              "case_revision": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1
+              },
+              "reserved_external_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "minLength": 1
+              },
+              "unverified_reason": {
+                "enum": [
+                  "recipe_file_missing",
+                  "recipe_file_unreadable",
+                  "recipe_file_invalid",
+                  "case_binding_invalid",
+                  "recipe_path_outside_app",
+                  "executed_steps_differ_from_recipe_file"
+                ]
+              }
+            },
+            "if": {
+              "properties": {
+                "recipe_sha256": {
+                  "type": "null"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "unverified_reason"
+              ]
+            },
+            "else": {
+              "not": {
+                "required": [
+                  "unverified_reason"
+                ]
+              }
+            }
+          },
+          "operation_witnesses": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "step_index",
+                "operation_identity",
+                "stage",
+                "ok",
+                "shots"
+              ],
+              "properties": {
+                "step_index": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "operation_identity": {
+                  "$ref": "#/$defs/operationIdentity"
+                },
+                "stage": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "ok": {
+                  "type": "boolean"
+                },
+                "shots": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "negative_control": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "control_id",
+              "declaration_sha256",
+              "applied",
+              "perturbation",
+              "expect",
+              "base_recipe_identity",
+              "perturbed_steps_digest",
+              "failed_step_index",
+              "fail_kind"
+            ],
+            "description": "区分力反向 Run 实际施加的扰动与失败位置。applied 表示 Runner 执行的 steps 摘要等于扰动后 steps 摘要；failed_step_index 为扰动后 steps 中触发失败的下标（仅 failed 时非 null）；base_recipe_identity 为扰动前 Recipe 的执行身份",
+            "properties": {
+              "control_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "declaration_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "applied": {
+                "type": "boolean"
+              },
+              "perturbation": {
+                "type": "object"
+              },
+              "expect": {
+                "type": "object"
+              },
+              "operation_identity": {
+                "$ref": "#/$defs/operationIdentity"
+              },
+              "base_recipe_identity": {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              },
+              "base_steps_digest": {
+                "type": "string",
+                "minLength": 1,
+                "description": "扰动前 Recipe steps 的规范摘要（recipe_steps_digest）；转正重新序列化文件后仍不变"
+              },
+              "perturbed_steps_digest": {
+                "type": "string",
+                "minLength": 1
+              },
+              "failed_step_index": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "fail_kind": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "binding_sha256": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^[0-9a-f]{64}$",
+                "description": "负对照执行时冻结的 app-symbols.v1 原始字节 SHA-256；未使用符号绑定时为 null 或省略。"
+              },
+              "joint_verdict": {
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/jointVerdictResult"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "负对照执行时的联合裁决结果（用于 expect.plane 为 api/readback/joint 的区分力判定）。"
+              },
+              "planes": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "description": "负对照执行时的多平面裁决摘要（用于非 UI 平面区分力判定）。"
+              }
+            }
+          },
+          "blocker": {
+            "$ref": "#/$defs/blocker"
+          },
+          "joint_verdict": {
+            "$ref": "#/$defs/jointVerdictResult"
+          },
+          "planes": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "ui": {
+                "$ref": "#/$defs/planeResult"
+              },
+              "function": {
+                "$ref": "#/$defs/planeResult"
+              },
+              "api": {
+                "$ref": "#/$defs/apiPlaneResult"
+              },
+              "telemetry": {
+                "$ref": "#/$defs/planeResult"
+              },
+              "readback": {
+                "$ref": "#/$defs/planeResult"
+              }
+            }
+          }
+        }
+      }
+    },
+    "groups": {
+      "type": "array",
+      "description": "分组批跑的有序执行计划与终态；普通单组 run 可省略。",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "label",
+          "ids",
+          "status"
+        ],
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "running",
+              "done",
+              "aborted"
+            ]
+          }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "string",
+      "description": "指向本 run 的 artifact-manifest.json 的相对路径（自包含 run 目录内）"
+    },
+    "lock_phase": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "三段生命周期，仅 execute 占屏幕互斥锁",
+      "properties": {
+        "provision": {
+          "$ref": "#/$defs/phaseOutcome"
+        },
+        "execute": {
+          "$ref": "#/$defs/phaseOutcome"
+        },
+        "collect": {
+          "$ref": "#/$defs/phaseOutcome"
+        }
+      }
+    },
+    "timestamps": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "queued_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "provision_started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "execute_started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "execute_ended_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "collect_ended_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "operationIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "app",
+        "id",
+        "name",
+        "revision",
+        "content_sha256"
+      ],
+      "properties": {
+        "app": {
+          "type": "string",
+          "minLength": 1
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "content_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "storeContextSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "catalog_snapshot_id",
+        "identity",
+        "brand",
+        "store_code",
+        "name",
+        "short_name",
+        "address",
+        "market_name",
+        "market_code",
+        "city_name",
+        "national_city_code",
+        "status",
+        "store_type",
+        "coordinates",
+        "tolerance_m"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "store-context.v1"
+        },
+        "catalog_snapshot_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "identity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "brand": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "store_code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string"
+        },
+        "short_name": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        },
+        "market_name": {
+          "type": "string"
+        },
+        "market_code": {
+          "type": "string"
+        },
+        "city_name": {
+          "type": "string"
+        },
+        "national_city_code": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "store_type": {
+          "type": "string"
+        },
+        "coordinates": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "source_store",
+            "source_map"
+          ],
+          "properties": {
+            "source_store": {
+              "$ref": "#/$defs/storeCoordinate"
+            },
+            "source_map": {
+              "$ref": "#/$defs/storeCoordinate"
+            }
+          }
+        },
+        "tolerance_m": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    },
+    "storeCoordinate": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "lng",
+            "lat"
+          ],
+          "properties": {
+            "lng": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            },
+            "lat": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            }
+          }
+        }
+      ]
+    },
+    "blocker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scope",
+        "code",
+        "recovery"
+      ],
+      "properties": {
+        "scope": {
+          "enum": [
+            "asset",
+            "rig",
+            "capability",
+            "fixture"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "capability": {
+          "type": "string",
+          "minLength": 1
+        },
+        "recovery": {
+          "type": "string"
+        },
+        "evidence_ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "rigEvidence": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "available": {
+          "type": "boolean"
+        },
+        "evidence": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "daemon": {
+          "type": "boolean"
+        },
+        "on_down": {
+          "type": "boolean"
+        }
+      }
+    },
+    "apiScenarioRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "const": "planes/api/private/scenario.json"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "apiPlaneResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "verdict"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "required",
+            "advisory",
+            "disabled",
+            "controlled"
+          ]
+        },
+        "verdict": {
+          "enum": [
+            "pass",
+            "fail",
+            "captured",
+            "pending",
+            "skipped",
+            "not_configured"
+          ],
+          "description": "captured：advisory 抓取面采到数据但无断言（旁路证据，不计 overall）"
+        },
+        "detail": {
+          "type": "string"
+        },
+        "scenario": {
+          "$ref": "#/$defs/apiScenarioRef"
+        },
+        "rule_snapshot_hash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "delivery": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "hit_count",
+            "completed_count"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "verified",
+                "failed"
+              ]
+            },
+            "reason": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "hit_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "completed_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "receipt": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "path",
+                "sha256"
+              ],
+              "properties": {
+                "path": {
+                  "const": "planes/api/private/controlled-receipt.json"
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              }
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "mode": {
+                "const": "controlled"
+              }
+            },
+            "required": [
+              "mode"
+            ]
+          },
+          "then": {
+            "required": [
+              "scenario"
+            ]
+          },
+          "else": {
+            "not": {
+              "required": [
+                "scenario"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "planeResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "verdict"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "required",
+            "advisory",
+            "disabled"
+          ]
+        },
+        "verdict": {
+          "enum": [
+            "pass",
+            "fail",
+            "captured",
+            "pending",
+            "skipped",
+            "not_configured"
+          ],
+          "description": "captured：advisory 抓取面采到数据但无断言（旁路证据，不计 overall）"
+        },
+        "detail": {
+          "type": "string"
+        },
+        "ax_backend": {
+          "enum": [
+            "frida_inproc",
+            "guest_axruntime",
+            null
+          ],
+          "description": "产出该 UI 观测平面时冻结的 AX 观测后端（D8）。"
+        }
+      }
+    },
+    "phaseOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "ok",
+            "failed",
+            "skipped"
+          ]
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "ended_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "jointVerdictResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "用例级业务实体 UI / API / Readback 联合裁决结果（fail-closed）。",
+      "required": [
+        "status",
+        "fail_kind",
+        "detail",
+        "entity_type",
+        "entity_id",
+        "planes",
+        "mismatch_reasons"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "pass",
+            "fail",
+            "error"
+          ]
+        },
+        "fail_kind": {
+          "type": "string"
+        },
+        "detail": {
+          "type": "string"
+        },
+        "entity_type": {
+          "type": "string"
+        },
+        "entity_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "planes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "ui",
+            "api",
+            "readback"
+          ],
+          "properties": {
+            "ui": {
+              "enum": [
+                "pass",
+                "fail",
+                "skipped"
+              ]
+            },
+            "api": {
+              "enum": [
+                "pass",
+                "fail",
+                "missing",
+                "skipped"
+              ]
+            },
+            "readback": {
+              "enum": [
+                "pass",
+                "fail",
+                "missing",
+                "skipped"
+              ]
+            }
+          }
+        },
+        "mismatch_reasons": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

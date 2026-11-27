@@ -1,0 +1,19 @@
+<!doctype html><html lang="zh"><meta charset="utf-8"><title>模拟 B 端 · 手机操作</title>
+<style>body{font:15px system-ui;margin:24px;background:#f5f7fb}button,input,select{font:inherit;padding:8px;margin:4px}iframe{width:850px;height:750px;border:1px solid #aaa;background:white}pre{white-space:pre-wrap}</style>
+<h1>模拟 B 端 · 手机操作</h1><p>设备使用替身驱动；授权、设备锁、数据库与交互通道使用真实实现。</p>
+<label>用户 <input id="user" value="tester"></label><label>设备 <select id="device"><option value="">自动分配</option></select></label>
+<label>模式 <select id="mode"><option value="control">操作</option><option value="view">观看</option></select></label>
+<button id="open">申请会话</button><button id="close">撤销会话</button><pre id="status"></pre><div id="phone"></div>
+<script>
+let active=null;const status=document.querySelector('#status');
+async function call(path,options={}){const r=await fetch('/b/'+path,options);const d=await r.json();if(!r.ok)throw Error(JSON.stringify(d));return d;}
+call('devices').then(data=>{for(const d of data.devices||data){const o=document.createElement('option');o.value=d.device;o.textContent=d.device;document.querySelector('#device').append(o);}}).catch(e=>status.textContent=e.message);
+document.querySelector('#open').onclick=async()=>{try{
+ if(active)throw Error('请先撤销当前会话');
+ const d=await call('sessions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({request_id:crypto.randomUUID(),user:document.querySelector('#user').value,mode:document.querySelector('#mode').value,device:document.querySelector('#device').value||undefined})});
+ active=d;const url=new URL(d.embed_url);url.searchParams.set('host_origin',location.origin);url.searchParams.set('embed',d.session_id);
+ const frame=document.createElement('iframe');frame.src=url;document.querySelector('#phone').replaceChildren(frame);status.textContent='已分配 '+d.device;
+}catch(e){status.textContent=e.message;}};
+document.querySelector('#close').onclick=async()=>{if(!active)return;try{await call('sessions/'+active.session_id,{method:'DELETE'});active=null;document.querySelector('#phone').replaceChildren();status.textContent='已撤销';}catch(e){status.textContent=e.message;}};
+window.addEventListener('message',e=>{const frame=document.querySelector('iframe');if(!frame||e.source!==frame.contentWindow||e.origin!==new URL(frame.src).origin)return;const m=e.data;if(m.protocol!=='autophone.device-console'||m.version!==1||m.embed_id!==active?.session_id)return;status.textContent=JSON.stringify({device:m.device,type:m.type});});
+</script></html>

@@ -1,0 +1,22 @@
+{
+  "name": "autophone-phase4-agent",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Phase 4 抓取层 frida agent —— 用 frida-compile 把 frida-objc-bridge 打进脚本，让 python-loaded（非 CLI REPL）脚本也能解 ObjC.classes。",
+  "scripts": {
+    "test": "node --test src/*.test.mjs",
+    "build": "npm run build:bridge && npm run build:discovery && npm run build:net && npm run build:gps && npm run build:gps-control && npm run build:scanner-observe && npm run build:crash-trap && npm run build:metadata-port-probe && npm run build:native-typography-probe",
+    "build:bridge": "${FRIDA_COMPILE:-frida-compile} src/objc_bridge_probe.js -o _build/objc_bridge_probe.js",
+    "build:discovery": "${FRIDA_COMPILE:-frida-compile} src/net_discovery.js -o _build/net_discovery.js",
+    "build:net": "${FRIDA_COMPILE:-frida-compile} src/net_tap.js -B iife -o _build/net_tap.js",
+    "build:gps": "${FRIDA_COMPILE:-frida-compile} src/corelocation_discovery.js -o _build/corelocation_discovery.js",
+    "build:gps-control": "${FRIDA_COMPILE:-frida-compile} src/corelocation_control.js -o _build/corelocation_control.js",
+    "build:scanner-observe": "${FRIDA_COMPILE:-frida-compile} src/scanner_observe.js -o _build/scanner_observe.js",
+    "build:crash-trap": "${FRIDA_COMPILE:-frida-compile} src/crash_trap.js -o _build/crash_trap.js",
+    "build:metadata-port-probe": "${FRIDA_COMPILE:-frida-compile} src/metadata_port_probe.js -o _build/metadata_port_probe.js",
+    "build:native-typography-probe": "${FRIDA_COMPILE:-frida-compile} src/native_typography_probe.js -o _build/native_typography_probe.js"
+  },
+  "devDependencies": {
+    "frida-objc-bridge": "^8.0.0"
+  }
+}

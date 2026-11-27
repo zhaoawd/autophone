@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/package-install-receipt.v1.json",
+  "title": "PackageInstallReceipt",
+  "description": "最近一次设备安装的宿主侧回执。verified=true 表示该 slot 已通过 LaunchServices 注册校验；需求出口闸只采信 package sha256 与安装目标均匹配的回执。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "app",
+    "slot",
+    "sha256",
+    "verified",
+    "installer",
+    "target",
+    "target_fingerprint",
+    "installed_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "v1"
+    },
+    "app": {
+      "type": "string",
+      "minLength": 1
+    },
+    "slot": {
+      "type": "string",
+      "pattern": "^[0-9]{3,}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "verified": {
+      "type": "boolean"
+    },
+    "installer": {
+      "type": "string",
+      "minLength": 1
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "device",
+        "vm",
+        "vm_dir",
+        "socket"
+      ],
+      "properties": {
+        "device": {
+          "type": "string",
+          "minLength": 1
+        },
+        "vm": {
+          "type": "string",
+          "minLength": 1
+        },
+        "vm_dir": {
+          "type": "string",
+          "minLength": 1
+        },
+        "socket": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "description": "由 vphone_target.resolve_target 解析并规范化的安装目标"
+    },
+    "target_fingerprint": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "canonical device/vm/vm_dir/socket JSON 的 sha256；调用方还必须复核 target 与摘要自洽"
+    },
+    "installed_at": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

@@ -1,0 +1,654 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/run-spec.v1.json",
+  "title": "RunSpec",
+  "description": "一次 run 的输入声明（配置期）。RunResult 在执行期产生，见 run-result.v1.json。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "type",
+    "app",
+    "device"
+  ],
+  "properties": {
+    "candidate_ref": {
+      "$ref": "candidate-ref.v1.json"
+    },
+    "runtime_requirements": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "enum": [
+              "required",
+              "advisory",
+              "disabled"
+            ]
+          },
+          "contract_version": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "identity_requirements": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "platform_source_ref": {
+          "enum": [
+            "required",
+            "advisory",
+            "disabled"
+          ]
+        },
+        "vphone_source_ref": {
+          "enum": [
+            "required",
+            "advisory",
+            "disabled"
+          ]
+        },
+        "deployed_runtime_ref": {
+          "enum": [
+            "required",
+            "advisory",
+            "disabled"
+          ]
+        },
+        "vm_instance_ref": {
+          "enum": [
+            "required",
+            "advisory",
+            "disabled"
+          ]
+        },
+        "subject_build_ref": {
+          "enum": [
+            "required",
+            "advisory",
+            "disabled"
+          ]
+        }
+      }
+    },
+    "schema_version": {
+      "const": "v1"
+    },
+    "autophone_version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "run 创建时冻结的 autophone 发布版本"
+    },
+    "commit": {
+      "type": "string",
+      "minLength": 1,
+      "description": "run 创建时冻结的 autophone commit"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "type": {
+      "enum": [
+        "regression",
+        "verification",
+        "operation",
+        "explore"
+      ]
+    },
+    "app": {
+      "type": "string",
+      "minLength": 1
+    },
+    "device": {
+      "type": "string",
+      "minLength": 1,
+      "description": "默认单机；预留多 VM 维度"
+    },
+    "case_selector": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "description": "regression/verification 用；explore 可省略",
+      "properties": {
+        "ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tag": {
+          "type": "string",
+          "description": "如 ui_ready / needs_fixture"
+        },
+        "module": {
+          "type": "string"
+        },
+        "suite": {
+          "type": "string",
+          "description": "人工圈定的执行集合，如 smoke"
+        },
+        "flow": {
+          "type": "string",
+          "description": "显式有状态履约流；执行端按各 case.flow.step 排序，不能退回 YAML 文件顺序"
+        },
+        "statuses": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "draft",
+              "active",
+              "deprecated",
+              "archived"
+            ]
+          },
+          "description": "缺省由执行端物化为 [active]；显式传入才选择其它生命周期"
+        },
+        "trial_draft_recipes": {
+          "type": "boolean",
+          "description": "草稿 recipe 试跑：对 ids 显式点名的用例，无论 case status 都临时注册其 recipes/drafts/<id>.yaml。用于「active 规范用例 + 尚未验证的草稿 recipe」的转正证据链（案 R107/R108…）；必须与 ids 同用，不得按 tag/suite 圈选。"
+        }
+      }
+    },
+    "trial_confirmation": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "case_id",
+          "run_effect",
+          "context_sha256",
+          "acknowledged"
+        ],
+        "properties": {
+          "case_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "run_effect": {
+            "enum": [
+              "reversible",
+              "irreversible",
+              "unknown"
+            ]
+          },
+          "context_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "acknowledged": {
+            "const": true
+          }
+        }
+      }
+    },
+    "negative_control": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "case_id",
+        "control_id",
+        "declaration_sha256"
+      ],
+      "description": "区分力反向 Run：按 apps/<app>/discrimination/negative_controls.yaml 中点名的声明，对唯一被选 Case 的 Recipe 施加最小反向状态后执行。执行端核对声明摘要，不一致即拒绝执行；仅 type=regression 且 case_selector.ids 恰为该 Case 时有效。此类 Run 不计入 Draft Trial 转正证据与回归裁决。",
+      "properties": {
+        "case_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "control_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]*$"
+        },
+        "declaration_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "golden_path": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "case_id",
+        "declaration_sha256"
+      ],
+      "description": "黄金路径 Run 标记：本 Run 为 apps/<app>/golden_paths.yaml 中点名的黄金路径提交。提交端与执行端核对路径已声明、case_id 属于该路径、declaration_sha256 等于当前声明摘要（不含 title），且 case_selector 等于该 Case 当前生命周期下的计划 selector；仅 type=regression 有效，不得与 execution_plan、negative_control 同用。执行端对该 Case 的 live Recipe 读取一次并冻结，并绑定 Fixture Readback 计划；无此字段的普通回归行为不变。",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "case_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "declaration_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "execution_plan": {
+      "enum": [
+        "current"
+      ],
+      "description": "App-specific serial batch plan. current includes active and draft cases, excludes R104, and defers unproven duty transitions."
+    },
+    "origin": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "run 触发来源；调度/门禁等派生编排留痕",
+      "properties": {
+        "schedule_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "gate_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rerun_of_run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rerun_of_run_dir": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "store_context": {
+      "$ref": "#/$defs/storeContextInput",
+      "description": "看板标头所选门店。提交时可只给 brand/store_code；RunService 会从门店目录重新解析并替换为不可伪造的规范快照。"
+    },
+    "fixture": {
+      "type": "object",
+      "description": "前置状态声明，内容由各 App 的 fixture adapter 解释（app-specific）。",
+      "additionalProperties": true
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "type=verification 的验证单声明。可引用 apps/<app>/verification 下的 yaml，也可 inline requirement/checkpoints。",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "相对 App 根目录的验证单路径，如 verification/V-1234.yaml"
+        },
+        "requirement": {
+          "type": "string"
+        },
+        "draft_id": {
+          "type": "string",
+          "description": "转正漏斗里的 draft step-script id"
+        },
+        "agent": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "内置验证单执行器设置。只在 AUTOPHONE_VERIFICATION_AGENT_CMD=builtin:verify-agent 时生效；其他执行器声明该字段时 Run 按 error 结束。优先于 AUTOPHONE_VERIFICATION_AGENT_PROVIDER / _MODEL / _MAX_BUDGET_USD / _STOP_BUDGET_USD。",
+          "properties": {
+            "provider": {
+              "enum": [
+                "claude",
+                "codex"
+              ]
+            },
+            "model": {
+              "type": "string",
+              "minLength": 1
+            },
+            "max_budget_usd": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "单次调用费用授权上限（美元），调用后按回报成本判定。provider 不支持上限时不调用并以 ai_budget_limit_unsupported 结束。"
+            },
+            "stop_budget_usd": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "传给 CLI --max-budget-usd 的停止阈值（美元），须不大于 max_budget_usd 且需同时声明 max_budget_usd。缺省为 max_budget_usd × AUTOPHONE_VERIFICATION_AGENT_STOP_BUDGET_RATIO（缺省 0.5）。优先于 AUTOPHONE_VERIFICATION_AGENT_STOP_BUDGET_USD。"
+            }
+          }
+        },
+        "checkpoints": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "title"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "evidence": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "description": "type=operation 的操作引用：按 name 指向 apps/<app>/operations 的操作，with 给入参。",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "操作库里的稳定语义名，如 create_order"
+        },
+        "with": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "入参，由操作的 params 契约校验"
+        },
+        "draft_id": {
+          "type": "string",
+          "description": "转正漏斗里被验证的 operation draft id（如 OP12）。录制/AI 起草的 draft 跑回放时带上，run 据此归因、统计连续 passed（与 verification.draft_id 对称，见 record-replay-design §五）"
+        },
+        "replay_speed": {
+          "enum": [
+            0.5,
+            1.0,
+            1.5,
+            2.0,
+            2.5,
+            3.0,
+            3.5,
+            4.0
+          ],
+          "description": "typed-IR operation 回放倍速（executor 控制项，不是业务入参，故独立于 with）：缩放步间停顿 dwell，默认 1.0 原速=重放录制真实间隔。只影响节奏/取数，不碰 settle/断言；转正门只计 1.0 的 run（见 record-replay-design §倍速回放）"
+        }
+      }
+    },
+    "planes": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "四观测面的策略（mode），裁决（verdict）在 RunResult 里产生。",
+      "properties": {
+        "ui": {
+          "$ref": "#/$defs/planePolicy"
+        },
+        "function": {
+          "$ref": "#/$defs/planePolicy"
+        },
+        "api": {
+          "$ref": "#/$defs/apiPlanePolicy"
+        },
+        "telemetry": {
+          "$ref": "#/$defs/planePolicy"
+        }
+      }
+    },
+    "auto_login": {
+      "type": "boolean",
+      "description": "needs_login 时是否在登录闸内自动补登（默认 false=fail-fast）。验证登录失败等需停在登出态的用例务必保持缺省/false。"
+    },
+    "crash_trap": {
+      "type": "boolean",
+      "description": "execute 阶段是否后台挂 crash_trap 兜底捕获被测 app 的原始 SIGBUS/SIGSEGV 崩点（落 planes/crash/）。缺省=开（auto，无 frida 则 fail-open 静默跳过）；显式 false 关。也可用环境 AUTOPHONE_CRASH_TRAP=0 全局关。"
+    },
+    "requested_by": {
+      "type": "string"
+    },
+    "requested_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "$defs": {
+    "storeContextInput": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "brand",
+            "store_code"
+          ],
+          "properties": {
+            "brand": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "store_code": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        {
+          "$ref": "#/$defs/storeContextSnapshot"
+        }
+      ]
+    },
+    "storeContextSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "catalog_snapshot_id",
+        "identity",
+        "brand",
+        "store_code",
+        "name",
+        "short_name",
+        "address",
+        "market_name",
+        "market_code",
+        "city_name",
+        "national_city_code",
+        "status",
+        "store_type",
+        "coordinates",
+        "tolerance_m"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "store-context.v1"
+        },
+        "catalog_snapshot_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "identity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "brand": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "store_code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string"
+        },
+        "short_name": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        },
+        "market_name": {
+          "type": "string"
+        },
+        "market_code": {
+          "type": "string"
+        },
+        "city_name": {
+          "type": "string"
+        },
+        "national_city_code": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "store_type": {
+          "type": "string"
+        },
+        "coordinates": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "source_store",
+            "source_map"
+          ],
+          "properties": {
+            "source_store": {
+              "$ref": "#/$defs/storeCoordinate"
+            },
+            "source_map": {
+              "$ref": "#/$defs/storeCoordinate"
+            }
+          }
+        },
+        "tolerance_m": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    },
+    "storeCoordinate": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "lng",
+            "lat"
+          ],
+          "properties": {
+            "lng": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            },
+            "lat": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            }
+          }
+        }
+      ]
+    },
+    "apiScenarioRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "const": "planes/api/private/scenario.json"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "apiPlanePolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "required",
+            "advisory",
+            "disabled",
+            "controlled"
+          ]
+        },
+        "scenario": {
+          "$ref": "#/$defs/apiScenarioRef"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "mode": {
+                "const": "controlled"
+              }
+            },
+            "required": [
+              "mode"
+            ]
+          },
+          "then": {
+            "required": [
+              "scenario"
+            ]
+          },
+          "else": {
+            "not": {
+              "required": [
+                "scenario"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "planePolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "required",
+            "advisory",
+            "disabled"
+          ],
+          "description": "advisory 必须显式声明；声明了且有能力默认 required。"
+        }
+      }
+    }
+  }
+}

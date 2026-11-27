@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "registry-build-ref.v1.json",
+  "title": "RegistryBuildRef",
+  "description": "Host Registry 在某一时刻选中的具体 Build。所有会执行安装、运行或裁决的 Trace 都必须冻结完整的这一结构，Slot 不能单独标识 Build。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["app", "slot", "build_id", "artifact_sha256"],
+  "properties": {
+    "app": {"type": "string", "minLength": 1},
+    "slot": {"type": "string", "pattern": "^[0-9]{3,}$"},
+    "short_version": {"type": ["string", "null"]},
+    "build_id": {"type": "string", "pattern": "^bld-[0-9a-f]{12,64}$"},
+    "build_version": {"type": ["string", "null"]},
+    "source_revision": {"$ref": "package-manifest.v2.json#/$defs/source_revision"},
+    "artifact_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "resolution_source": {
+      "enum": ["build_id", "slot_build_id", "slot_sha256", "candidate", "installed", "legacy_alias"],
+      "description": "解析器实际使用的 selector 形式；legacy_alias 用于统计遗留 slot-only 调用方"
+    }
+  }
+}

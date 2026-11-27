@@ -1,0 +1,41 @@
+[project]
+name = "autophone-domain"
+version = "0.2.0"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{ name = "zhaoawd" }]
+requires-python = ">=3.11,<3.14"
+description = "Autophone Typed-IR regression executor, package store, location, and observation domain"
+dependencies = ["autophone-kernel==0.2.0", "autophone-rig==0.2.0"]
+
+[project.urls]
+Homepage = "https://github.com/zhaoawd/autophone"
+Repository = "https://github.com/zhaoawd/autophone.git"
+Issues = "https://github.com/zhaoawd/autophone/issues"
+Changelog = "https://github.com/zhaoawd/autophone/blob/main/CHANGELOG.md"
+
+[project.entry-points."autophone.run_admission"]
+trial_confirmation = "autophone.knowledge.trial_confirmation:validate_trial_confirmation"
+
+[project.entry-points."autophone.executor"]
+run = "autophone.execution.handlers:create_executor"
+[project.entry-points."autophone.device_session"]
+run = "autophone.execution.handlers:create_device_session_ops"
+
+[project.optional-dependencies]
+frida = ["ddddocr>=1.6.1", "frida==17.16.1", "frida-tools==14.10.4"]
+
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.hooks.custom]
+path = "hatch_build.py"
+
+[tool.hatch.build.targets.wheel]
+bypass-selection = true
+only-include = []
+exclude = ["**"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/pyproject.toml", "/hatch_build.py", "/build_support.py"]

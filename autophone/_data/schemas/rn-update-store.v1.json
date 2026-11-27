@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "rn-update-store.v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "app",
+    "updates"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "rn-update-store/v1"
+    },
+    "app": {
+      "type": "string",
+      "minLength": 1
+    },
+    "updates": {
+      "type": "array",
+      "items": {
+        "$ref": "rn-update-record.v1.json"
+      }
+    }
+  }
+}

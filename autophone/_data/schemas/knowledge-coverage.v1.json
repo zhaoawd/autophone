@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/knowledge-coverage.v1.json",
+  "title": "Knowledge coverage source-of-truth document",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "app", "cells"],
+  "properties": {
+    "schema_version": {"const": "v1"},
+    "app": {"type": "string", "minLength": 1},
+    "cells": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/cell"}
+    }
+  },
+  "$defs": {
+    "cell": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "scope", "business_weight", "evidence_cost", "effect_risk",
+        "required_evidence_level"
+      ],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "scope": {"type": "object", "additionalProperties": true},
+        "business_weight": {"type": "number", "minimum": 0},
+        "evidence_cost": {"type": "number", "exclusiveMinimum": 0},
+        "effect_risk": {"type": "number", "minimum": 0},
+        "required_evidence_level": {
+          "enum": [
+            "static_hint", "observed", "repeated",
+            "controlled_contrast", "independent_readback"
+          ]
+        },
+        "evidence_level": {
+          "type": ["string", "null"],
+          "enum": [
+            "static_hint", "observed", "repeated",
+            "controlled_contrast", "independent_readback", null
+          ]
+        },
+        "evidence_state": {
+          "type": ["string", "null"],
+          "enum": ["current", "stale", "contradicted", "missing", null]
+        },
+        "scope_complete": {"type": "boolean"},
+        "blocker": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["code", "detail"],
+          "properties": {
+            "code": {"type": "string", "minLength": 1},
+            "detail": {"type": "string", "minLength": 1}
+          }
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        },
+        "out_of_scope": {"const": true}
+      }
+    }
+  }
+}

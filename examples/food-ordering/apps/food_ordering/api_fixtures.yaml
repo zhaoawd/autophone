@@ -1,0 +1,7 @@
+# Counterexample #6 & Stage 2 independent expected-entity test data (flat_fixture_vars format).
+# Strictly independent of the app under test; feeds both UI assertions and R5's case-level
+# entity_binding ({from_fixture}) across UI, window-scoped API capture, and post-action readback.
+R5:
+  expected_store_id: "store-flagship-a"
+  expected_store_name: "旗舰店-A"
+  expected_preference_profile: "少冰少糖-VIP"

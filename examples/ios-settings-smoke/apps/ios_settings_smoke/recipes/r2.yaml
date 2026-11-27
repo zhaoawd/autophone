@@ -1,0 +1,5 @@
+id: R2
+steps:
+  - action: assert_present
+    queries: ["AUTOPHONE_NEGATIVE_SENTINEL_404"]
+    wait_s: 0

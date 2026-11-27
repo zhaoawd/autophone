@@ -1,0 +1,7 @@
+#!/bin/sh
+# BL-229：测试环境中的 AI CLI 占位可执行文件。
+# tests/conftest.py（pytest 进程拉起的子进程）与 tests/e2e/server-common.mjs（浏览器回归的
+# dashboard）把本目录前置到 PATH；测试期间按名字查找 claude / codex 时解析到这里，真实 CLI
+# 不会被执行。任何调用立即以非 0 退出，stderr 说明原因，调用方按 AI 调用失败处理（fail-closed）。
+echo "BL-229: tests must not launch the real AI CLI ($(basename "$0")); inject a fake runner instead (tests/ai_cli_guard)" >&2
+exit 126

@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/impact-execution.v1.json",
+  "title": "ImpactExecution",
+  "description": "Impact Plan 通过既有 Operation Run 控制面执行后的编排事实；不承载 API/UI 差异结论。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run_id", "app", "build", "status", "started_at", "ended_at", "targets", "operation_runs", "executed_effects", "summary"],
+  "properties": {
+    "schema_version": { "const": "v1" },
+    "run_id": { "type": "string", "minLength": 1 },
+    "app": { "type": "string", "minLength": 1 },
+    "build": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["completed", "partial", "blocked", "no_executable_targets"] },
+    "started_at": { "type": "string", "minLength": 1 },
+    "ended_at": { "type": "string", "minLength": 1 },
+    "targets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["target_id", "execution", "status", "operations", "evidence_runs"],
+        "properties": {
+          "target_id": { "type": "string", "minLength": 1 },
+          "execution": { "enum": ["execute", "advisory", "candidate", "blocked"] },
+          "status": { "enum": ["passed", "blocked", "skipped"] },
+          "operations": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+          "evidence_runs": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+          "blocker": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["kind", "detail"],
+            "properties": {
+              "kind": { "type": "string", "minLength": 1 },
+              "detail": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      }
+    },
+    "operation_runs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["operation", "run_id", "status", "target_ids"],
+        "properties": {
+          "operation": { "type": "string", "minLength": 1 },
+          "run_id": { "type": "string", "minLength": 1 },
+          "status": { "type": "string", "minLength": 1 },
+          "target_ids": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+          "detail": { "type": "string" }
+        }
+      }
+    },
+    "executed_effects": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total", "scheduled", "reached", "blocked", "skipped", "operation_runs"],
+      "properties": {
+        "total": { "type": "integer", "minimum": 0 },
+        "scheduled": { "type": "integer", "minimum": 0 },
+        "reached": { "type": "integer", "minimum": 0 },
+        "blocked": { "type": "integer", "minimum": 0 },
+        "skipped": { "type": "integer", "minimum": 0 },
+        "operation_runs": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

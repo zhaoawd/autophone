@@ -1,0 +1,247 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "operation-ax-checkpoint.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "identity",
+    "checkpoint",
+    "shot_sha256",
+    "snapshot",
+    "build_identity"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "v1"
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "run_id",
+        "app",
+        "build",
+        "operation",
+        "bundle_id"
+      ],
+      "properties": {
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "app": {
+          "type": "string",
+          "minLength": 1
+        },
+        "build": {
+          "type": "string",
+          "minLength": 1
+        },
+        "bundle_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operation": {
+          "type": "object",
+          "required": [
+            "id",
+            "name",
+            "revision"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        }
+      }
+    },
+    "checkpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "expected",
+        "matched",
+        "shot",
+        "attempt"
+      ],
+      "properties": {
+        "expected": {
+          "type": "string",
+          "minLength": 1
+        },
+        "matched": {
+          "type": "string",
+          "minLength": 1
+        },
+        "shot": {
+          "type": "string",
+          "minLength": 1
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "shot_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "snapshot": {
+      "type": "object",
+      "required": [
+        "schema",
+        "evidence_protocol",
+        "request_id",
+        "captured_at_ms",
+        "app",
+        "complete",
+        "truncated",
+        "screen",
+        "nodes",
+        "bundle_version",
+        "short_version"
+      ],
+      "properties": {
+        "schema": {
+          "const": "autophone.ax/1"
+        },
+        "evidence_protocol": {
+          "const": 1
+        },
+        "request_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "captured_at_ms": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "app": {
+          "type": "string",
+          "minLength": 1
+        },
+        "complete": {
+          "const": true
+        },
+        "truncated": {
+          "const": false
+        },
+        "bundle_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "short_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "screen": {
+          "type": "object",
+          "required": [
+            "scale",
+            "w",
+            "h"
+          ],
+          "properties": {
+            "scale": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "w": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "h": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          }
+        },
+        "nodes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4000,
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "label",
+              "role",
+              "traits",
+              "enabled",
+              "value",
+              "identifier",
+              "frame"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "label": {
+                "type": "string"
+              },
+              "role": {
+                "type": "string",
+                "minLength": 1
+              },
+              "traits": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "enabled": {
+                "type": "boolean"
+              },
+              "value": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "identifier": {
+                "type": "string"
+              },
+              "frame": {
+                "type": "array",
+                "minItems": 4,
+                "maxItems": 4,
+                "items": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "build_identity": {
+      "allOf": [
+        {
+          "$ref": "build-identity.v1.json"
+        },
+        {
+          "properties": {
+            "identity_state": {
+              "const": "confirmed"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

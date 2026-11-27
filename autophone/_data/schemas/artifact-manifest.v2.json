@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/artifact-manifest.v2.json",
+  "title": "ArtifactManifest",
+  "description": "一个自包含 run 目录的产物清单，每条带治理元数据。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run_id", "artifacts"],
+  "properties": {
+    "schema_version": { "const": "v2" },
+    "run_id": { "type": "string", "minLength": 1 },
+    "artifacts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/artifact" }
+    }
+  },
+  "$defs": {
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "kind", "sensitivity", "redaction_status", "retention", "share_policy"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$", "description": "相对 run 目录；禁绝对路径与 `..` 段（防净化包逃逸）" },
+        "kind": {
+          "enum": ["report", "screenshot", "screen_recording", "api_capture", "telemetry_events", "telemetry_raw", "telemetry_query_summary", "coverage", "fixture", "log", "other"]
+        },
+        "sensitivity": { "enum": ["public", "internal", "sensitive"] },
+        "redaction_status": {
+          "enum": ["raw", "redacted", "summary_only"],
+          "description": "raw 默认 retention=local_only 且 share_policy=forbidden"
+        },
+        "retention": { "enum": ["local_only", "shareable"] },
+        "share_policy": { "enum": ["summary_only", "attach_allowed", "forbidden"] },
+        "ai_policy": {
+          "enum": ["allowed", "allowed_after_redaction", "forbidden"],
+          "description": "独立于 share_policy 的 AI 使用维度。缺省时按 raw/forbidden→forbidden、其余→allowed 推导"
+        },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "bytes": { "type": "integer", "minimum": 0 }
+      },
+      "allOf": [
+        {
+          "$comment": "raw 原始抓取不得外发、不得标记为可分享",
+          "if": { "properties": { "redaction_status": { "const": "raw" } } },
+          "then": {
+            "properties": {
+              "retention": { "const": "local_only" },
+              "share_policy": { "const": "forbidden" }
+            }
+          }
+        },
+        {
+          "$comment": "telemetry raw 与 api capture raw 不得直接进 AI 净化包：截图单独放行不能连带它们",
+          "if": { "properties": { "kind": { "enum": ["telemetry_raw", "api_capture"] } }, "required": ["kind"] },
+          "then": {
+            "properties": {
+              "ai_policy": { "enum": ["allowed_after_redaction", "forbidden"] }
+            }
+          }
+        },
+        {
+          "$comment": "sensitive 产物不得直接附件外发",
+          "if": { "properties": { "sensitivity": { "const": "sensitive" } } },
+          "then": {
+            "properties": {
+              "share_policy": { "enum": ["summary_only", "forbidden"] }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

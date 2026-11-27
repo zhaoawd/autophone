@@ -1,0 +1,24 @@
+schema: autophone.app-symbols/1
+app: food_ordering
+artifact_identity:
+  kind: ipa_build
+  bundle_id: com.autophone.foodorderingdemo.v2
+  short_version: "1.0.0"
+  build_version: "1"
+  build_id: bld-14282f675363
+  artifact_sha256: 14282f675363a9d74361c9b5d24dcde461648df2a13cf9aa4488d0aad4f68d58
+controls:
+  ctrl.home.preferences:
+    kind: button
+    scope:
+      screen_id: S01_home
+      region: [0.05, 0.15, 0.95, 0.90]
+    locator:
+      kind: ax_identifier
+      identifier: home.ai_prompt.preferences
+      role: button
+      enabled_only: true
+      require_unique: true
+    effects:
+      verbs: []
+      completeness: exhaustive

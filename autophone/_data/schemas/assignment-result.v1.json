@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "assignment-result.v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "assignment_id", "attempt_no", "fencing", "status", "product_verdict", "run_result", "cleanup_receipt", "rig_disposition", "fixture_disposition", "artifact_refs", "closure"],
+  "properties": {
+    "reset_receipt": {"$ref": "reset-receipt.v0.json"},
+    "schema_version": {"const": "assignment-result/v1"},
+    "assignment_id": {"type": "string", "minLength": 1},
+    "attempt_no": {"type": "integer", "minimum": 1},
+    "fencing": {"type": "integer", "minimum": 1},
+    "status": {"enum": ["passed", "failed", "error", "blocked", "cancelled", "indeterminate"]},
+    "product_verdict": {"type": "string", "minLength": 1},
+    "run_result": {"anyOf": [
+      {"type": "null"},
+      {"type": "object", "required": ["run_id", "status"], "properties": {
+        "run_id": {"type": "string", "minLength": 1}, "status": {"type": "string", "minLength": 1}
+      }}
+    ]},
+    "cleanup_receipt": {
+      "type": "object",
+      "required": ["status", "artifacts_sealed", "device_access_released"],
+      "properties": {
+        "status": {"enum": ["passed", "error"]},
+        "artifacts_sealed": {"type": "boolean"},
+        "device_access_released": {"type": "boolean"}
+      }
+    },
+    "rig_disposition": {"enum": ["reusable", "needs_inspection", "quarantine"]},
+    "fixture_disposition": {"enum": ["preserved", "unknown", "restored", "failed", "not_required"]},
+    "artifact_refs": {"type": "array", "items": {"type": "object"}},
+    "closure": {"type": ["object", "null"]},
+    "recovery_receipt": {"type": "object"},
+    "detail": {"type": "string"},
+    "reason": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"}
+  }
+}

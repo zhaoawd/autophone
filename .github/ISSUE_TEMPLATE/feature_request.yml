@@ -1,0 +1,26 @@
+name: Feature Request
+description: Propose a capability, Verb, or platform improvement aligned with Autophone's core scope
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or Use Case
+      description: What workflow or testing gap are you trying to solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Solution
+      description: Describe the desired CLI, HTTP API, Web Console, or Recipe behavior and (if relevant) how it interacts with the Control Plane or ScreenLock.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered (optional)
+      description: Could this be achieved with existing Operations, App asset packs, or Entry Point extensions?
+    validations:
+      required: false

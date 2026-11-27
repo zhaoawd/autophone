@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autophone/schemas/knowledge-run-control.v1.json",
+  "title": "Explicit controlled-experiment bindings for compiled observations",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "bindings"],
+  "properties": {
+    "schema_version": {"const": "v1"},
+    "bindings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["match"],
+        "properties": {
+          "match": {
+            "type": "object",
+            "additionalProperties": false,
+            "minProperties": 1,
+            "properties": {
+              "observation_id": {"type": "string"},
+              "type": {"type": "string"},
+              "case_id": {"type": "string"},
+              "operation": {"type": "string"},
+              "action_id": {"type": "string"}
+            }
+          },
+          "contrast": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "group", "claim_id", "experiment_id", "experiment_instance",
+              "target_input", "change_as_expected"
+            ],
+            "properties": {
+              "group": {"type": "string", "minLength": 1},
+              "claim_id": {"type": "string", "minLength": 1},
+              "experiment_id": {"type": "string", "minLength": 1},
+              "experiment_instance": {
+                "type": "string",
+                "format": "date",
+                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+              },
+              "target_input": {"type": "string", "minLength": 1},
+              "change_as_expected": {"type": "boolean"}
+            }
+          },
+          "independent_readback": {"const": true}
+        },
+        "anyOf": [
+          {"required": ["contrast"]},
+          {"required": ["independent_readback"]}
+        ]
+      }
+    }
+  }
+}

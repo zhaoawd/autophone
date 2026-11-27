@@ -1,0 +1,26 @@
+schema: autophone.negative-controls/1
+controls:
+  - id: neg.prefs.symbol.skip_nav
+    case_id: R3
+    hypothesis: 跳过首页调偏好符号导航步骤后，若后置断言有区分力（「饮食偏好」/「保存偏好」）则应在 assert_present 处失败；仅断言首页与目标页共有文案（如「微辣」）将被识别为 toothless。
+    perturbation:
+      kind: skip_step
+      step:
+        action: tap_ax
+    expect:
+      step:
+        action: assert_present
+      fail_kinds:
+        - assertion_failed
+  - id: neg.prefs.manual.skip_nav
+    case_id: R2
+    hypothesis: 跳过手写调偏好导航步骤后，饮食偏好页断言（「饮食偏好」/「保存偏好」）应在 assert_present 处失败。
+    perturbation:
+      kind: skip_step
+      step:
+        action: tap_ax
+    expect:
+      step:
+        action: assert_present
+      fail_kinds:
+        - assertion_failed
