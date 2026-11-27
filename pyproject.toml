@@ -42,7 +42,7 @@ frida = [
     "ddddocr>=1.6.1",
     # Frida is a two-sided protocol (host Python/tools + guest server). Keep the
     # promoted baseline exact and verify candidate versions in isolation before changing it.
-    "frida==17.16.1",
+    "frida==17.27.5",
     "frida-tools==14.10.4",
 ]
 contract = [
@@ -70,7 +70,7 @@ frida = [
     "ddddocr>=1.6.1",
     # Frida is a two-sided protocol (host Python/tools + guest server). Keep the
     # promoted baseline exact and verify candidate versions in isolation before changing it.
-    "frida==17.16.1",
+    "frida==17.27.5",
     "frida-tools==14.10.4",
 ]
 contract = [
