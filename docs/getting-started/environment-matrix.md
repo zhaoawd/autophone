@@ -44,7 +44,7 @@
 | **零 VM 离线模式** | `autophone serve`（`/embed/device-console?demo=1`）、`autophone app case lint`、`scripts/verify_core_install.py` | Python `3.11`–`3.13` + 基础核心（或源码树 `--group platform`） | 无需 VM、无需 PostgreSQL / `psycopg`、无需 Frida |
 | **单 VM 本地模式** | `autophone rig up --target <target.json>`（单个 `--target` 且未设 `AUTOPHONE_DATABASE_URL`） | Apple Silicon macOS + 单台 `vphone` VM + Xcode CLT | 无需 PostgreSQL 服务，独立 wheel/sdist 安装亦无需安装 `psycopg`；单机 `ScreenLock` 串行保护 |
 | **多 VM Control Plane 模式** | `autophone rig up --target rig-a.json --target rig-b.json`（配合 `AUTOPHONE_DATABASE_URL` 或 `--ephemeral-db`） | **PostgreSQL `16`** + 可选 **`autophone[postgres]`**（CI 与 `scripts/test_public_platform.sh` 实测）+ 多台隔离 `DeviceTarget` | 每台 Rig 独立 `autophone-rig-agent` 与 `ScreenLock`；缺失 `psycopg` 或控制面不可达时严格 fail-closed（CLI 退出码 `2`、HTTP `503`），绝不静默直连 UDS |
-| **[`vphone_mcp/`](../../vphone_mcp/README.md) MCP 服务** | `uv --directory vphone_mcp run vphone-mcp`（支持 `AUTOPHONE_VPHONE_PROTOCOL=upstream_v1\|legacy`） | 独立包 `vphone_mcp/` | 支持 `control_plane` / `local_lock` / `managed_proxy` `ScreenLock` 协同（配置控制面不可达时 fail-closed，独立模式可选 `VPHONE_MCP_REQUIRE_LOCK=1`）与 `upstream_v1` 线协议；已在 `upstream_v1`（iOS `27.0.1 / 24A446`）通过 10/10 实机闭环验收，正式转正 |
+| **[`vphone_mcp/`](https://github.com/zhaoawd/autophone/blob/main/vphone_mcp/README.md) MCP 服务** | `uv --directory vphone_mcp run vphone-mcp`（支持 `AUTOPHONE_VPHONE_PROTOCOL=upstream_v1\|legacy`） | 独立包 `vphone_mcp/` | 支持 `control_plane` / `local_lock` / `managed_proxy` `ScreenLock` 协同（配置控制面不可达时 fail-closed，独立模式可选 `VPHONE_MCP_REQUIRE_LOCK=1`）与 `upstream_v1` 线协议；已在 `upstream_v1`（iOS `27.0.1 / 24A446`）通过 10/10 实机闭环验收，正式转正 |
 
 ## 5. Accessibility（AX）后端矩阵
 

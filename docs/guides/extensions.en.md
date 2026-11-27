@@ -4,7 +4,7 @@
 
 Autophone Public Core decouples the Control Plane and Rig transport layer (`autophone-rig`) from regression execution, draft-trial admission, and interactive session implementations (`autophone-domain`) using standard Python `importlib.metadata.entry_points`. Third-party integrations and custom deployments can plug in their own providers without modifying core packages.
 
-> Every signature, loading precedence rule, and fail-closed contract in this guide is verified directly against the real loaders in [tests/test_extension_entrypoints.py](../../tests/test_extension_entrypoints.py). A minimal runnable template package lives in [examples/plugin-template/](../../examples/plugin-template/README.md).
+> Every signature, loading precedence rule, and fail-closed contract in this guide is verified directly against the real loaders in [tests/test_extension_entrypoints.py](https://github.com/zhaoawd/autophone/blob/main/tests/test_extension_entrypoints.py). A minimal runnable template package lives in [examples/plugin-template/](https://github.com/zhaoawd/autophone/blob/main/examples/plugin-template/README.md).
 
 ## 1. Core Entry Point Overview
 
@@ -184,7 +184,7 @@ For completeness, Autophone also defines three additional optional entry-point g
 
 ## 6. `pyproject.toml` Registration, Minimal Template & Verification
 
-A complete minimal third-party package template is provided under [examples/plugin-template/](../../examples/plugin-template/README.md) (see [examples/plugin-template/pyproject.toml](../../examples/plugin-template/pyproject.toml)):
+A complete minimal third-party package template is provided under [examples/plugin-template/](https://github.com/zhaoawd/autophone/blob/main/examples/plugin-template/README.md) (see [examples/plugin-template/pyproject.toml](https://github.com/zhaoawd/autophone/blob/main/examples/plugin-template/pyproject.toml)):
 
 ```toml
 [project.entry-points."autophone.run_admission"]

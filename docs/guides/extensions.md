@@ -4,7 +4,7 @@
 
 Autophone 公开核心将控制面/Rig 传输层（`autophone-rig`）与回归执行、试跑准入及交互会话实现（`autophone-domain`）通过标准 Python `importlib.metadata.entry_points` 解耦。第三方或自定义部署可以在不修改核心代码的前提下，通过分发包元数据或显式工厂参数替换或接入自己的实现。
 
-> 本文档所有函数签名、加载优先级与 fail-closed 契约均与当前源码一致，并由 [tests/test_extension_entrypoints.py](../../tests/test_extension_entrypoints.py) 持续校验。最小可运行插件模板见 [examples/plugin-template/](../../examples/plugin-template/README.md)。
+> 本文档所有函数签名、加载优先级与 fail-closed 契约均与当前源码一致，并由 [tests/test_extension_entrypoints.py](https://github.com/zhaoawd/autophone/blob/main/tests/test_extension_entrypoints.py) 持续校验。最小可运行插件模板见 [examples/plugin-template/](https://github.com/zhaoawd/autophone/blob/main/examples/plugin-template/README.md)。
 
 ## 1. 核心扩展点总览
 
@@ -184,7 +184,7 @@ def create_device_session_ops(
 
 ## 6. `pyproject.toml` 注册与最小模板
 
-完整的最小第三方插件模板位于 [examples/plugin-template/](../../examples/plugin-template/README.md)（参见 [examples/plugin-template/pyproject.toml](../../examples/plugin-template/pyproject.toml)）：
+完整的最小第三方插件模板位于 [examples/plugin-template/](https://github.com/zhaoawd/autophone/blob/main/examples/plugin-template/README.md)（参见 [examples/plugin-template/pyproject.toml](https://github.com/zhaoawd/autophone/blob/main/examples/plugin-template/pyproject.toml)）：
 
 ```toml
 [project.entry-points."autophone.run_admission"]
