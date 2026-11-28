@@ -23,7 +23,7 @@ run = "autophone.execution.handlers:create_executor"
 run = "autophone.execution.handlers:create_device_session_ops"
 
 [project.optional-dependencies]
-frida = ["ddddocr>=1.6.1", "frida==17.16.1", "frida-tools==14.10.4"]
+frida = ["ddddocr>=1.6.1", "frida==17.27.5", "frida-tools==14.10.4"]
 
 [build-system]
 requires = ["hatchling>=1.27"]
